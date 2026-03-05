@@ -1,5 +1,5 @@
 package com.writershub.app.ui.screens
-
+import com.writershub.app.data.model.User
 import androidx.compose.foundation.layout.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
@@ -88,11 +88,25 @@ fun RegisterScreen(
         Spacer(modifier = Modifier.height(24.dp))
 
         Button(
-            onClick = onRegisterClick,  // Now calls the function passed from navigation
+            onClick = {
+                // Create a new user
+                val newUser = User(
+                    id = System.currentTimeMillis().toString(),
+                    name = fullName,
+                    email = email,
+                    phone = phone,
+                    isActivated = false
+                )
+                // Save to session
+                com.writershub.app.data.repository.SessionManager.register(newUser)
+                // Navigate
+                onRegisterClick()
+            },
             modifier = Modifier.fillMaxWidth()
         ) {
             Text("Register")
         }
+
 
         Spacer(modifier = Modifier.height(12.dp))
 

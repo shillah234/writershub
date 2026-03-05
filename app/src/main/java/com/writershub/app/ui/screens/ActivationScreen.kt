@@ -54,15 +54,18 @@ fun ActivationScreen(
                 )
             }
         }
-
-        Spacer(modifier = Modifier.height(24.dp))
-
         Button(
-            onClick = onActivateClick,
+            onClick = {
+                // Mark user as activated
+                com.writershub.app.data.repository.SessionManager.activateAccount()
+                // Navigate
+                onActivateClick()
+            },
             modifier = Modifier.fillMaxWidth()
         ) {
             Text("Pay KES 100 via M-Pesa")
         }
+        Spacer(modifier = Modifier.height(24.dp))
 
         Spacer(modifier = Modifier.height(12.dp))
 
