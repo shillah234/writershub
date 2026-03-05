@@ -1,4 +1,4 @@
-package com.example.writershub.ui.theme
+package com.writershub.app.ui.theme
 
 import androidx.compose.ui.graphics.Color
 

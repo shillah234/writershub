@@ -1,4 +1,4 @@
-package com.example.writershub
+package com.writershub.app
 
 import org.junit.Test
 

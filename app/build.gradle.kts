@@ -4,7 +4,7 @@ plugins {
 }
 
 android {
-    namespace = "com.example.writershub"
+    namespace = "com.writershub.app"
     compileSdk {
         version = release(36)
     }
