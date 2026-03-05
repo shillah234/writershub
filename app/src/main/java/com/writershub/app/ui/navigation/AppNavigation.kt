@@ -4,8 +4,7 @@ import androidx.compose.runtime.Composable
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
-import com.writershub.app.ui.screens.LoginScreen
-import com.writershub.app.ui.screens.RegisterScreen
+import com.writershub.app.ui.screens.*
 
 @Composable
 fun AppNavigation() {
@@ -13,17 +12,15 @@ fun AppNavigation() {
 
     NavHost(
         navController = navController,
-        startDestination = "login"  // Start with Login screen
+        startDestination = "login"
     ) {
         composable("login") {
             LoginScreen(
                 onLoginClick = {
-                    // When login button clicked, go to dashboard (we'll create this next)
-                    // For now, just print
-                    println("Login clicked - will navigate to dashboard")
+                    // After login, go to activation (not dashboard directly)
+                    navController.navigate("activation")
                 },
                 onRegisterClick = {
-                    // When "Register" link clicked, go to register screen
                     navController.navigate("register")
                 }
             )
@@ -32,13 +29,32 @@ fun AppNavigation() {
         composable("register") {
             RegisterScreen(
                 onRegisterClick = {
-                    // When register button clicked, go back to login
-                    navController.navigate("login") {
-                        popUpTo("login") { inclusive = true }
-                    }
+                    // After registration, go to activation
+                    navController.navigate("activation")
                 },
                 onLoginClick = {
-                    // When "Login" link clicked, go back to login
+                    navController.navigate("login")
+                }
+            )
+        }
+
+        composable("activation") {
+            ActivationScreen(
+                onActivateClick = {
+                    // After activation, go to dashboard with all features
+                    navController.navigate("dashboard")
+                },
+                onSkipClick = {
+                    // If they skip, go to dashboard but show activation card
+                    navController.navigate("dashboard")
+                }
+            )
+        }
+
+        composable("dashboard") {
+            DashboardScreen(
+                onLogoutClick = {
+                    navController.popBackStack()
                     navController.navigate("login")
                 }
             )
