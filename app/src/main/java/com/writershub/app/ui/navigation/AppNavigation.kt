@@ -1,15 +1,20 @@
 package com.writershub.app.ui.navigation
 
 import androidx.compose.runtime.Composable
+import androidx.navigation.NavType
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
+import androidx.navigation.navArgument
 import com.writershub.app.ui.screens.LoginScreen
 import com.writershub.app.ui.screens.RegisterScreen
 import com.writershub.app.ui.screens.ActivationScreen
 import com.writershub.app.ui.screens.DashboardScreen
 import com.writershub.app.ui.screens.TasksScreen
-import com.writershub.app.ui.screens.PlaceholderScreen
+import com.writershub.app.ui.screens.ShortVideosScreen
+import com.writershub.app.ui.screens.PremiumTasksScreen
+import com.writershub.app.ui.screens.SettingsScreen
+import com.writershub.app.ui.screens.TaskDetailScreen
 
 @Composable
 fun AppNavigation() {
@@ -80,35 +85,68 @@ fun AppNavigation() {
             TasksScreen(
                 onBackClick = {
                     navController.popBackStack()
+                },
+                onTaskDetailClick = { taskId ->
+                    navController.navigate("task_detail/$taskId")
                 }
             )
         }
 
         composable("daily_tasks") {
-            PlaceholderScreen(
-                title = "Daily Tasks",
-                onBackClick = { navController.popBackStack() }
+            TasksScreen(
+                onBackClick = {
+                    navController.popBackStack()
+                },
+                onTaskDetailClick = { taskId ->
+                    navController.navigate("task_detail/$taskId")
+                }
             )
         }
 
         composable("short_videos") {
-            PlaceholderScreen(
-                title = "Short Videos",
-                onBackClick = { navController.popBackStack() }
+            ShortVideosScreen(
+                onBackClick = {
+                    navController.popBackStack()
+                },
+                onTaskDetailClick = { taskId ->
+                    navController.navigate("task_detail/$taskId")
+                }
             )
         }
 
         composable("premium_tasks") {
-            PlaceholderScreen(
-                title = "Premium Tasks",
-                onBackClick = { navController.popBackStack() }
+            PremiumTasksScreen(
+                onBackClick = {
+                    navController.popBackStack()
+                },
+                onTaskDetailClick = { taskId ->
+                    navController.navigate("task_detail/$taskId")
+                }
             )
         }
 
         composable("settings") {
-            PlaceholderScreen(
-                title = "Settings",
-                onBackClick = { navController.popBackStack() }
+            SettingsScreen(
+                onBackClick = {
+                    navController.popBackStack()
+                }
+            )
+        }
+
+        composable(
+            route = "task_detail/{taskId}",
+            arguments = listOf(navArgument("taskId") { type = NavType.StringType })
+        ) { backStackEntry ->
+            val taskId = backStackEntry.arguments?.getString("taskId") ?: ""
+            TaskDetailScreen(
+                taskId = taskId,
+                onBackClick = {
+                    navController.popBackStack()
+                },
+                onCompleteClick = {
+                    // Handle task completion
+                    navController.popBackStack()
+                }
             )
         }
     }

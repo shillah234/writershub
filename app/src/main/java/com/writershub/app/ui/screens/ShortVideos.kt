@@ -12,11 +12,11 @@ import com.writershub.app.data.repository.TaskRepository
 import com.writershub.app.ui.components.TaskCard
 
 @Composable
-fun TasksScreen(
+fun ShortVideosScreen(
     onBackClick: () -> Unit,
     onTaskDetailClick: (String) -> Unit
 ) {
-    val dailyTasks = remember { TaskRepository.getDailyTasks() }
+    val videoTasks = remember { TaskRepository.getVideoTasks() }
 
     Column(
         modifier = Modifier
@@ -31,12 +31,12 @@ fun TasksScreen(
         ) {
             Column {
                 Text(
-                    text = "Daily Tasks",
+                    text = "Short Videos",
                     fontSize = 24.sp,
                     style = MaterialTheme.typography.headlineMedium
                 )
                 Text(
-                    text = "Complete tasks and earn daily",
+                    text = "Watch and earn",
                     fontSize = 14.sp,
                     color = MaterialTheme.colorScheme.primary
                 )
@@ -49,12 +49,12 @@ fun TasksScreen(
 
         Spacer(modifier = Modifier.height(16.dp))
 
-        // Tasks List
+        // Videos List
         LazyColumn {
-            items(dailyTasks.size) { index ->
+            items(videoTasks.size) { index ->
                 TaskCard(
-                    task = dailyTasks[index],
-                    onTaskClick = { onTaskDetailClick(dailyTasks[index].id) }
+                    task = videoTasks[index],
+                    onTaskClick = { onTaskDetailClick(videoTasks[index].id) }
                 )
             }
 
