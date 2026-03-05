@@ -10,8 +10,10 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 
 @Composable
-fun LoginScreen() {
-    // These remember the text user types
+fun LoginScreen(
+    onLoginClick: () -> Unit,     // This will be called when Login button is clicked
+    onRegisterClick: () -> Unit   // This will be called when Register link is clicked
+) {
     var email by remember { mutableStateOf("") }
     var password by remember { mutableStateOf("") }
 
@@ -22,7 +24,6 @@ fun LoginScreen() {
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.Center
     ) {
-        // App Title
         Text(
             text = "WritersHub",
             fontSize = 32.sp,
@@ -37,7 +38,6 @@ fun LoginScreen() {
 
         Spacer(modifier = Modifier.height(40.dp))
 
-        // Email Field
         OutlinedTextField(
             value = email,
             onValueChange = { email = it },
@@ -48,7 +48,6 @@ fun LoginScreen() {
 
         Spacer(modifier = Modifier.height(12.dp))
 
-        // Password Field
         OutlinedTextField(
             value = password,
             onValueChange = { password = it },
@@ -60,12 +59,8 @@ fun LoginScreen() {
 
         Spacer(modifier = Modifier.height(24.dp))
 
-        // Login Button
         Button(
-            onClick = {
-                // We'll add login logic later
-                println("Login clicked: $email")
-            },
+            onClick = onLoginClick,  // Now calls the function passed from navigation
             modifier = Modifier.fillMaxWidth()
         ) {
             Text("Login")
@@ -73,12 +68,8 @@ fun LoginScreen() {
 
         Spacer(modifier = Modifier.height(12.dp))
 
-        // Register Link
         TextButton(
-            onClick = {
-                // We'll navigate to register later
-                println("Register clicked")
-            }
+            onClick = onRegisterClick  // Now calls the function passed from navigation
         ) {
             Text("Don't have an account? Register")
         }

@@ -10,8 +10,10 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 
 @Composable
-fun RegisterScreen() {
-    // State variables for form fields
+fun RegisterScreen(
+    onRegisterClick: () -> Unit,  // Called when Register button is clicked
+    onLoginClick: () -> Unit      // Called when Login link is clicked
+) {
     var fullName by remember { mutableStateOf("") }
     var email by remember { mutableStateOf("") }
     var phone by remember { mutableStateOf("") }
@@ -25,22 +27,14 @@ fun RegisterScreen() {
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.Center
     ) {
-        // Title
         Text(
             text = "Create Account",
             fontSize = 28.sp,
             style = MaterialTheme.typography.headlineMedium
         )
 
-        Text(
-            text = "Join WritersHub today",
-            fontSize = 14.sp,
-            color = MaterialTheme.colorScheme.primary
-        )
-
         Spacer(modifier = Modifier.height(30.dp))
 
-        // Full Name Field
         OutlinedTextField(
             value = fullName,
             onValueChange = { fullName = it },
@@ -51,7 +45,6 @@ fun RegisterScreen() {
 
         Spacer(modifier = Modifier.height(8.dp))
 
-        // Email Field
         OutlinedTextField(
             value = email,
             onValueChange = { email = it },
@@ -62,7 +55,6 @@ fun RegisterScreen() {
 
         Spacer(modifier = Modifier.height(8.dp))
 
-        // Phone Field
         OutlinedTextField(
             value = phone,
             onValueChange = { phone = it },
@@ -73,7 +65,6 @@ fun RegisterScreen() {
 
         Spacer(modifier = Modifier.height(8.dp))
 
-        // Password Field
         OutlinedTextField(
             value = password,
             onValueChange = { password = it },
@@ -85,7 +76,6 @@ fun RegisterScreen() {
 
         Spacer(modifier = Modifier.height(8.dp))
 
-        // Confirm Password Field
         OutlinedTextField(
             value = confirmPassword,
             onValueChange = { confirmPassword = it },
@@ -97,12 +87,8 @@ fun RegisterScreen() {
 
         Spacer(modifier = Modifier.height(24.dp))
 
-        // Register Button
         Button(
-            onClick = {
-                // We'll add registration logic later
-                println("Register clicked: $email")
-            },
+            onClick = onRegisterClick,  // Now calls the function passed from navigation
             modifier = Modifier.fillMaxWidth()
         ) {
             Text("Register")
@@ -110,12 +96,8 @@ fun RegisterScreen() {
 
         Spacer(modifier = Modifier.height(12.dp))
 
-        // Back to Login Link
         TextButton(
-            onClick = {
-                // We'll navigate back later
-                println("Back to login clicked")
-            }
+            onClick = onLoginClick  // Now calls the function passed from navigation
         ) {
             Text("Already have an account? Login")
         }

@@ -3,7 +3,7 @@ package com.writershub.app
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
-import com.writershub.app.ui.screens.RegisterScreen  // Changed this
+import com.writershub.app.ui.navigation.AppNavigation
 import com.writershub.app.ui.theme.WritershubTheme
 
 class MainActivity : ComponentActivity() {
@@ -13,7 +13,7 @@ class MainActivity : ComponentActivity() {
 
         setContent {
             WritershubTheme {
-                RegisterScreen()  // Changed this
+                AppNavigation()
             }
         }
     }
