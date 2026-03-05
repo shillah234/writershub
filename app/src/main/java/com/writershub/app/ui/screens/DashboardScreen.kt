@@ -13,6 +13,8 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.*
 import kotlinx.coroutines.launch
 import com.writershub.app.data.repository.SessionManager
+import java.text.NumberFormat
+import java.util.Locale
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -22,7 +24,8 @@ fun DashboardScreen(
     onDailyTasksClick: () -> Unit,
     onShortVideosClick: () -> Unit,
     onPremiumTasksClick: () -> Unit,
-    onSettingsClick: () -> Unit
+    onSettingsClick: () -> Unit,
+    onWithdrawClick: () -> Unit
 ) {
     val isActivated = SessionManager.isUserActivated()
     val user = SessionManager.currentUser
@@ -30,49 +33,45 @@ fun DashboardScreen(
     val drawerState = rememberDrawerState(initialValue = DrawerValue.Closed)
     val scope = rememberCoroutineScope()
 
+    val currencyFormat = NumberFormat.getCurrencyInstance(Locale("en", "KE"))
+
     ModalNavigationDrawer(
         drawerState = drawerState,
         drawerContent = {
             ModalDrawerSheet {
-                // Header
-                Box(
+                // Drawer Header
+                Column(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .height(150.dp)
                         .padding(16.dp)
                 ) {
-                    Column {
-                        Text(
-                            text = "WritersHub",
-                            fontSize = 24.sp,
-                            color = MaterialTheme.colorScheme.primary
-                        )
-                        Text(
-                            text = user?.name ?: "User",
-                            fontSize = 18.sp
-                        )
-                        Text(
-                            text = user?.email ?: "",
-                            fontSize = 14.sp,
-                            color = Color.Gray
-                        )
-                    }
+                    Text(
+                        text = "WritersHub",
+                        fontSize = 24.sp,
+                        color = MaterialTheme.colorScheme.primary
+                    )
+                    Text(
+                        text = user?.name ?: "User",
+                        fontSize = 18.sp
+                    )
+                    Text(
+                        text = user?.email ?: "",
+                        fontSize = 14.sp,
+                        color = Color.Gray
+                    )
                 }
 
                 Divider()
 
-                // Navigation Items
                 NavigationDrawerItem(
-                    icon = { Icon(Icons.Default.Home, contentDescription = "Home") },
+                    icon = { Icon(Icons.Default.Home, contentDescription = null) },
                     label = { Text("Home") },
                     selected = false,
-                    onClick = {
-                        scope.launch { drawerState.close() }
-                    }
+                    onClick = { scope.launch { drawerState.close() } }
                 )
 
                 NavigationDrawerItem(
-                    icon = { Icon(Icons.Default.List, contentDescription = "Daily Tasks") },
+                    icon = { Icon(Icons.Default.List, contentDescription = null) },
                     label = { Text("Daily Tasks") },
                     selected = false,
                     onClick = {
@@ -82,7 +81,7 @@ fun DashboardScreen(
                 )
 
                 NavigationDrawerItem(
-                    icon = { Icon(Icons.Default.PlayArrow, contentDescription = "Short Videos") },
+                    icon = { Icon(Icons.Default.PlayArrow, contentDescription = null) },
                     label = { Text("Short Videos") },
                     selected = false,
                     onClick = {
@@ -92,28 +91,22 @@ fun DashboardScreen(
                 )
 
                 NavigationDrawerItem(
-                    icon = { Icon(Icons.Default.Star, contentDescription = "Premium Tasks") },
+                    icon = { Icon(Icons.Default.Star, contentDescription = null) },
                     label = {
-                        if (isActivated) {
-                            Text("Premium Tasks")
-                        } else {
-                            Text("Premium Tasks (Locked)", color = Color.Gray)
-                        }
+                        if (isActivated) Text("Premium Tasks")
+                        else Text("Premium Tasks (Locked)", color = Color.Gray)
                     },
                     selected = false,
                     onClick = {
                         scope.launch { drawerState.close() }
-                        if (isActivated) {
-                            onPremiumTasksClick()
-                        }
-                        // If not activated, do nothing (just close drawer)
+                        if (isActivated) onPremiumTasksClick()
                     }
                 )
 
                 Divider()
 
                 NavigationDrawerItem(
-                    icon = { Icon(Icons.Default.Settings, contentDescription = "Settings") },
+                    icon = { Icon(Icons.Default.Settings, contentDescription = null) },
                     label = { Text("Settings") },
                     selected = false,
                     onClick = {
@@ -122,10 +115,21 @@ fun DashboardScreen(
                     }
                 )
 
+                // Withdraw - No icon
+                NavigationDrawerItem(
+                    icon = null,
+                    label = { Text("Withdraw Funds") },
+                    selected = false,
+                    onClick = {
+                        scope.launch { drawerState.close() }
+                        onWithdrawClick()
+                    }
+                )
+
                 Spacer(modifier = Modifier.weight(1f))
 
                 NavigationDrawerItem(
-                    icon = { Icon(Icons.Default.ExitToApp, contentDescription = "Logout") },
+                    icon = { Icon(Icons.Default.ExitToApp, contentDescription = null) },
                     label = { Text("Logout", color = MaterialTheme.colorScheme.error) },
                     selected = false,
                     onClick = {
@@ -142,11 +146,17 @@ fun DashboardScreen(
                 TopAppBar(
                     title = { Text("Dashboard") },
                     navigationIcon = {
-                        IconButton(onClick = {
-                            scope.launch { drawerState.open() }
-                        }) {
-                            Icon(Icons.Default.Menu, contentDescription = "Menu")
+                        IconButton(onClick = { scope.launch { drawerState.open() } }) {
+                            Icon(Icons.Default.Menu, contentDescription = null)
                         }
+                    },
+                    actions = {
+                        Badge(
+                            containerColor = MaterialTheme.colorScheme.primary
+                        ) {
+                            Text("${SessionManager.getCompletedTasksCount()}")
+                        }
+                        Spacer(modifier = Modifier.width(8.dp))
                     }
                 )
             }
@@ -159,125 +169,227 @@ fun DashboardScreen(
                 horizontalAlignment = Alignment.CenterHorizontally
             ) {
                 item {
-                    Text(
-                        text = "Welcome ${user?.name ?: "User"}!",
-                        fontSize = 24.sp,
-                        style = MaterialTheme.typography.headlineMedium
-                    )
-
-                    Spacer(modifier = Modifier.height(8.dp))
-
-                    Surface(
-                        modifier = Modifier.fillMaxWidth(),
-                        color = MaterialTheme.colorScheme.primaryContainer
-                    ) {
+                    Column {
                         Text(
-                            text = "For assistance contact support@writershub.com",
-                            modifier = Modifier.padding(8.dp),
-                            color = MaterialTheme.colorScheme.onPrimaryContainer
+                            text = "Welcome ${user?.name ?: "User"}!",
+                            fontSize = 24.sp,
+                            style = MaterialTheme.typography.headlineMedium,
+                            modifier = Modifier.fillMaxWidth()
                         )
-                    }
 
-                    Spacer(modifier = Modifier.height(24.dp))
+                        Spacer(modifier = Modifier.height(8.dp))
 
-                    if (!isActivated) {
+                        Surface(
+                            modifier = Modifier.fillMaxWidth(),
+                            color = MaterialTheme.colorScheme.primaryContainer
+                        ) {
+                            Text(
+                                text = "📢 For assistance contact support@writershub.com",
+                                modifier = Modifier.padding(8.dp),
+                                color = MaterialTheme.colorScheme.onPrimaryContainer
+                            )
+                        }
+
+                        Spacer(modifier = Modifier.height(24.dp))
+
+                        if (!isActivated) {
+                            Card(
+                                modifier = Modifier.fillMaxWidth(),
+                                colors = CardDefaults.cardColors(
+                                    containerColor = Color(0xFFFFC107)
+                                )
+                            ) {
+                                Column(
+                                    modifier = Modifier.padding(16.dp)
+                                ) {
+                                    Text(
+                                        text = "⚠️ Activation Required",
+                                        fontSize = 18.sp,
+                                        color = Color.Black
+                                    )
+                                    Text(
+                                        text = "Pay KES 100 to access premium tasks",
+                                        fontSize = 14.sp,
+                                        color = Color.Black
+                                    )
+                                }
+                            }
+                            Spacer(modifier = Modifier.height(16.dp))
+                        }
+
                         Card(
                             modifier = Modifier.fillMaxWidth(),
                             colors = CardDefaults.cardColors(
-                                containerColor = Color(0xFFFFC107)
+                                containerColor = MaterialTheme.colorScheme.secondaryContainer
                             )
                         ) {
-                            Column(
-                                modifier = Modifier.padding(16.dp)
+                            Row(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .padding(16.dp),
+                                horizontalArrangement = Arrangement.SpaceEvenly
                             ) {
+                                Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                                    Text(
+                                        text = "${SessionManager.getCompletedTasksCount()}",
+                                        fontSize = 20.sp,
+                                        fontWeight = androidx.compose.ui.text.font.FontWeight.Bold
+                                    )
+                                    Text(text = "Tasks Done", fontSize = 12.sp)
+                                }
+
+                                Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                                    Text(
+                                        text = if (isActivated) "✅" else "🔒",
+                                        fontSize = 20.sp
+                                    )
+                                    Text(
+                                        text = if (isActivated) "Activated" else "Locked",
+                                        fontSize = 12.sp
+                                    )
+                                }
+                            }
+                        }
+
+                        Spacer(modifier = Modifier.height(24.dp))
+
+                        Text(
+                            text = "Your Wallet",
+                            fontSize = 20.sp,
+                            style = MaterialTheme.typography.titleLarge,
+                            modifier = Modifier.fillMaxWidth()
+                        )
+
+                        Spacer(modifier = Modifier.height(8.dp))
+
+                        // Wallet Balance Card
+                        Card(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(vertical = 4.dp),
+                            colors = CardDefaults.cardColors(
+                                containerColor = Color(0xFFFF9800)
+                            )
+                        ) {
+                            Row(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .padding(16.dp),
+                                horizontalArrangement = Arrangement.SpaceBetween
+                            ) {
+                                Text(text = "💰 Wallet Balance", color = Color.White)
                                 Text(
-                                    text = "⚠️ Activation Required",
-                                    fontSize = 18.sp,
-                                    color = Color.Black
-                                )
-                                Text(
-                                    text = "Pay KES 100 to access all features",
-                                    fontSize = 14.sp,
-                                    color = Color.Black
+                                    text = currencyFormat.format(user?.walletBalance ?: 0.00),
+                                    color = Color.White,
+                                    fontSize = 20.sp
                                 )
                             }
                         }
-                        Spacer(modifier = Modifier.height(16.dp))
-                    }
 
-                    if (isActivated) {
-                        WalletCard(
-                            title = "Wallet Balance",
-                            amount = "KES ${user?.walletBalance ?: 0.00}",
-                            color = Color(0xFFFF9800)
+                        if (isActivated) {
+                            Card(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .padding(vertical = 4.dp),
+                                colors = CardDefaults.cardColors(
+                                    containerColor = Color(0xFF4CAF50)
+                                )
+                            ) {
+                                Row(
+                                    modifier = Modifier
+                                        .fillMaxWidth()
+                                        .padding(16.dp),
+                                    horizontalArrangement = Arrangement.SpaceBetween
+                                ) {
+                                    Text(text = "📤 Total Withdrawn", color = Color.White)
+                                    Text(
+                                        text = currencyFormat.format(user?.totalWithdrawn ?: 0.00),
+                                        color = Color.White,
+                                        fontSize = 20.sp
+                                    )
+                                }
+                            }
+
+                            Card(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .padding(vertical = 4.dp),
+                                colors = CardDefaults.cardColors(
+                                    containerColor = Color(0xFF2196F3)
+                                )
+                            ) {
+                                Row(
+                                    modifier = Modifier
+                                        .fillMaxWidth()
+                                        .padding(16.dp),
+                                    horizontalArrangement = Arrangement.SpaceBetween
+                                ) {
+                                    Text(text = "📈 Total Earnings", color = Color.White)
+                                    Text(
+                                        text = currencyFormat.format(user?.totalEarnings ?: 0.00),
+                                        color = Color.White,
+                                        fontSize = 20.sp
+                                    )
+                                }
+                            }
+                        } else {
+                            Card(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .padding(vertical = 4.dp),
+                                colors = CardDefaults.cardColors(
+                                    containerColor = Color(0xFFFFC107)
+                                )
+                            ) {
+                                Row(
+                                    modifier = Modifier
+                                        .fillMaxWidth()
+                                        .padding(16.dp),
+                                    horizontalArrangement = Arrangement.SpaceBetween
+                                ) {
+                                    Text(text = "🔑 Activation Fee", color = Color.Black)
+                                    Text(text = "KES 100", color = Color.Black, fontSize = 20.sp)
+                                }
+                            }
+                        }
+
+                        Spacer(modifier = Modifier.height(24.dp))
+
+                        Text(
+                            text = "Quick Actions",
+                            fontSize = 20.sp,
+                            style = MaterialTheme.typography.titleLarge,
+                            modifier = Modifier.fillMaxWidth()
                         )
 
-                        WalletCard(
-                            title = "Total Withdrawn",
-                            amount = "KES ${user?.totalWithdrawn ?: 0.00}",
-                            color = Color(0xFF4CAF50)
-                        )
+                        Spacer(modifier = Modifier.height(8.dp))
 
-                        WalletCard(
-                            title = "Total Earnings",
-                            amount = "KES ${user?.totalEarnings ?: 0.00}",
-                            color = Color(0xFF2196F3)
-                        )
-                    }
+                        Button(
+                            onClick = onTasksClick,
+                            modifier = Modifier.fillMaxWidth(),
+                            colors = ButtonDefaults.buttonColors(
+                                containerColor = MaterialTheme.colorScheme.primary
+                            )
+                        ) {
+                            Text(text = "📋 View Available Tasks", fontSize = 16.sp)
+                        }
 
-                    if (!isActivated) {
-                        WalletCard(
-                            title = "Activation Fee",
-                            amount = "KES 100",
-                            color = Color(0xFFFFC107)
-                        )
-                    }
+                        Spacer(modifier = Modifier.height(8.dp))
 
-                    Spacer(modifier = Modifier.height(24.dp))
-
-                    Button(
-                        onClick = onTasksClick,
-                        modifier = Modifier.fillMaxWidth(),
-                        colors = ButtonDefaults.buttonColors(
-                            containerColor = MaterialTheme.colorScheme.primary
-                        )
-                    ) {
-                        Text("View Available Tasks")
+                        if ((user?.walletBalance ?: 0.0) > 0) {
+                            Button(
+                                onClick = onWithdrawClick,
+                                modifier = Modifier.fillMaxWidth(),
+                                colors = ButtonDefaults.buttonColors(
+                                    containerColor = Color(0xFF4CAF50)
+                                )
+                            ) {
+                                Text(text = "💸 Withdraw Earnings", fontSize = 16.sp)
+                            }
+                        }
                     }
                 }
             }
-        }
-    }
-}
-
-@Composable
-fun WalletCard(
-    title: String,
-    amount: String,
-    color: Color
-) {
-    Card(
-        modifier = Modifier
-            .fillMaxWidth()
-            .padding(vertical = 6.dp),
-        colors = CardDefaults.cardColors(
-            containerColor = color
-        )
-    ) {
-        Column(
-            modifier = Modifier.padding(16.dp)
-        ) {
-            Text(
-                text = title,
-                fontSize = 16.sp,
-                color = Color.White
-            )
-            Text(
-                text = amount,
-                fontSize = 24.sp,
-                style = MaterialTheme.typography.headlineSmall,
-                color = Color.White
-            )
         }
     }
 }

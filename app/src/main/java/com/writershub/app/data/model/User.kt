@@ -6,7 +6,8 @@ data class User(
     val email: String = "",
     val phone: String = "",
     val isActivated: Boolean = false,
-    val walletBalance: Double = 0.0,
-    val totalWithdrawn: Double = 0.0,
-    val totalEarnings: Double = 0.0
+    var walletBalance: Double = 0.0,
+    var totalWithdrawn: Double = 0.0,
+    var totalEarnings: Double = 0.0,
+    val completedTasks: MutableList<String> = mutableListOf()
 )

@@ -24,6 +24,7 @@ fun AppNavigation() {
         navController = navController,
         startDestination = "login"
     ) {
+        // Login Screen
         composable("login") {
             LoginScreen(
                 onLoginClick = {
@@ -35,6 +36,7 @@ fun AppNavigation() {
             )
         }
 
+        // Register Screen
         composable("register") {
             RegisterScreen(
                 onRegisterClick = {
@@ -46,6 +48,7 @@ fun AppNavigation() {
             )
         }
 
+        // Activation Screen
         composable("activation") {
             ActivationScreen(
                 onActivateClick = {
@@ -57,6 +60,7 @@ fun AppNavigation() {
             )
         }
 
+        // Dashboard Screen
         composable("dashboard") {
             DashboardScreen(
                 onTasksClick = {
@@ -77,10 +81,14 @@ fun AppNavigation() {
                 },
                 onSettingsClick = {
                     navController.navigate("settings")
+                },
+                onWithdrawClick = {
+                    navController.navigate("withdraw")
                 }
             )
         }
 
+        // Tasks Screen (Daily Tasks)
         composable("tasks") {
             TasksScreen(
                 onBackClick = {
@@ -92,6 +100,7 @@ fun AppNavigation() {
             )
         }
 
+        // Daily Tasks (same as tasks for now)
         composable("daily_tasks") {
             TasksScreen(
                 onBackClick = {
@@ -103,6 +112,7 @@ fun AppNavigation() {
             )
         }
 
+        // Short Videos Screen
         composable("short_videos") {
             ShortVideosScreen(
                 onBackClick = {
@@ -114,6 +124,7 @@ fun AppNavigation() {
             )
         }
 
+        // Premium Tasks Screen
         composable("premium_tasks") {
             PremiumTasksScreen(
                 onBackClick = {
@@ -125,6 +136,7 @@ fun AppNavigation() {
             )
         }
 
+        // Settings Screen
         composable("settings") {
             SettingsScreen(
                 onBackClick = {
@@ -133,6 +145,9 @@ fun AppNavigation() {
             )
         }
 
+
+
+        // Task Detail Screen with parameter
         composable(
             route = "task_detail/{taskId}",
             arguments = listOf(navArgument("taskId") { type = NavType.StringType })
@@ -144,7 +159,6 @@ fun AppNavigation() {
                     navController.popBackStack()
                 },
                 onCompleteClick = {
-                    // Handle task completion
                     navController.popBackStack()
                 }
             )
