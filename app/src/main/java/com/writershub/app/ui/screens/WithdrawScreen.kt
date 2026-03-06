@@ -1,6 +1,8 @@
 package com.writershub.app.ui.screens
 
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.items
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -10,11 +12,15 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowBack
+import androidx.compose.material.icons.filled.History
+import androidx.compose.material.icons.filled.Info
 import com.writershub.app.data.repository.SessionManager
+import com.writershub.app.data.model.WithdrawalStatus
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import java.text.NumberFormat
-import java.util.Locale
+import java.text.SimpleDateFormat
+import java.util.*
 
 @Composable
 fun WithdrawScreen(
@@ -22,22 +28,14 @@ fun WithdrawScreen(
     onWithdrawSuccess: () -> Unit
 ) {
     val user = SessionManager.currentUser
-    var amount by remember { mutableStateOf("") }
-    var showError by remember { mutableStateOf(false) }
-    var showSuccess by remember { mutableStateOf(false) }
-    var errorMessage by remember { mutableStateOf("") }
-    var isProcessing by remember { mutableStateOf(false) }
-
-    val scope = rememberCoroutineScope()
-    val currencyFormat = NumberFormat.getCurrencyInstance(Locale("en", "KE"))
-    val balance = user?.walletBalance ?: 0.0
+    var selectedTab by remember { mutableStateOf(0) } // 0 = Withdraw, 1 = History
 
     Column(
         modifier = Modifier
             .fillMaxSize()
             .padding(16.dp)
     ) {
-        // Header with back button
+        // Header
         Row(
             modifier = Modifier.fillMaxWidth(),
             verticalAlignment = Alignment.CenterVertically
@@ -52,8 +50,53 @@ fun WithdrawScreen(
             )
         }
 
-        Spacer(modifier = Modifier.height(24.dp))
+        Spacer(modifier = Modifier.height(16.dp))
 
+        // Tab Row
+        TabRow(selectedTabIndex = selectedTab) {
+            Tab(
+                selected = selectedTab == 0,
+                onClick = { selectedTab = 0 },
+                text = { Text("Withdraw") },
+                icon = { Icon(Icons.Default.Info, null) }
+            )
+            Tab(
+                selected = selectedTab == 1,
+                onClick = { selectedTab = 1 },
+                text = { Text("History") },
+                icon = { Icon(Icons.Default.History, null) }
+            )
+        }
+
+        Spacer(modifier = Modifier.height(16.dp))
+
+        // Content based on selected tab
+        when (selectedTab) {
+            0 -> WithdrawTab(onWithdrawSuccess)
+            1 -> HistoryTab()
+        }
+    }
+}
+
+@Composable
+fun WithdrawTab(
+    onWithdrawSuccess: () -> Unit
+) {
+    val user = SessionManager.currentUser
+    var amount by remember { mutableStateOf("") }
+    var phoneNumber by remember { mutableStateOf(user?.phone ?: "") }
+    var showError by remember { mutableStateOf(false) }
+    var showSuccess by remember { mutableStateOf(false) }
+    var errorMessage by remember { mutableStateOf("") }
+    var isProcessing by remember { mutableStateOf(false) }
+
+    val scope = rememberCoroutineScope()
+    val currencyFormat = NumberFormat.getCurrencyInstance(Locale("en", "KE"))
+    val balance = user?.walletBalance ?: 0.0
+
+    Column(
+        modifier = Modifier.fillMaxWidth()
+    ) {
         // Balance Card
         Card(
             modifier = Modifier.fillMaxWidth(),
@@ -94,6 +137,7 @@ fun WithdrawScreen(
 
                 Spacer(modifier = Modifier.height(16.dp))
 
+                // Amount Field
                 OutlinedTextField(
                     value = amount,
                     onValueChange = {
@@ -108,12 +152,24 @@ fun WithdrawScreen(
                     enabled = !isProcessing
                 )
 
-                Spacer(modifier = Modifier.height(8.dp))
+                Spacer(modifier = Modifier.height(12.dp))
 
-                Text(
-                    text = "Phone: ${user?.phone ?: "07XXXXXXXX"}",
-                    fontSize = 14.sp,
-                    color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f)
+                // M-Pesa Phone Number Field
+                OutlinedTextField(
+                    value = phoneNumber,
+                    onValueChange = {
+                        phoneNumber = it
+                        showError = false
+                        showSuccess = false
+                    },
+                    label = { Text("M-Pesa Phone Number") },
+                    modifier = Modifier.fillMaxWidth(),
+                    singleLine = true,
+                    placeholder = { Text("07XXXXXXXX") },
+                    enabled = !isProcessing,
+                    supportingText = {
+                        Text("Enter the phone number to receive funds")
+                    }
                 )
 
                 Spacer(modifier = Modifier.height(16.dp))
@@ -152,14 +208,19 @@ fun WithdrawScreen(
                                 color = Color(0xFF4CAF50)
                             )
                             Text(
-                                text = "Your withdrawal of ${currencyFormat.format(amount.toDoubleOrNull() ?: 0.0)} is being processed.",
+                                text = "Amount: ${currencyFormat.format(amount.toDoubleOrNull() ?: 0.0)}",
                                 fontSize = 14.sp,
                                 modifier = Modifier.padding(top = 4.dp)
                             )
                             Text(
-                                text = "Please wait for M-Pesa confirmation.",
+                                text = "Phone: $phoneNumber",
+                                fontSize = 14.sp
+                            )
+                            Text(
+                                text = "Status: PENDING - Waiting for processing",
                                 fontSize = 14.sp,
-                                color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f)
+                                color = Color(0xFFFF9800),
+                                modifier = Modifier.padding(top = 4.dp)
                             )
                         }
                     }
@@ -176,7 +237,7 @@ fun WithdrawScreen(
                         scope.launch {
                             delay(1000)
 
-                            val result = SessionManager.withdrawMoney(withdrawAmount)
+                            val result = SessionManager.requestWithdrawal(withdrawAmount, phoneNumber)
 
                             when (result) {
                                 "SUCCESS" -> {
@@ -184,7 +245,7 @@ fun WithdrawScreen(
                                     showError = false
                                     amount = ""
 
-                                    // Go back after 3 seconds
+                                    // Stay on screen to show success, then go back after 3 seconds
                                     delay(3000)
                                     onWithdrawSuccess()
                                 }
@@ -197,6 +258,11 @@ fun WithdrawScreen(
                                     showError = true
                                     showSuccess = false
                                     errorMessage = "Insufficient balance"
+                                }
+                                "INVALID_PHONE" -> {
+                                    showError = true
+                                    showSuccess = false
+                                    errorMessage = "Invalid phone number. Use format: 07XXXXXXXX"
                                 }
                             }
 
@@ -224,17 +290,147 @@ fun WithdrawScreen(
                             Text("Processing...")
                         }
                     } else {
-                        Text("Withdraw to M-Pesa")
+                        Text("Request Withdrawal")
                     }
                 }
 
                 Spacer(modifier = Modifier.height(8.dp))
 
-                // Minimum withdrawal notice
                 Text(
                     text = "Minimum withdrawal: KES 1000",
                     fontSize = 12.sp,
                     color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.5f)
+                )
+            }
+        }
+    }
+}
+
+@Composable
+fun HistoryTab() {
+    val withdrawals = SessionManager.getWithdrawalHistory()
+    val currencyFormat = NumberFormat.getCurrencyInstance(Locale("en", "KE"))
+    val dateFormat = SimpleDateFormat("dd/MM/yyyy HH:mm", Locale.getDefault())
+
+    Column(
+        modifier = Modifier.fillMaxWidth()
+    ) {
+        Text(
+            text = "Withdrawal History",
+            fontSize = 18.sp,
+            style = MaterialTheme.typography.titleMedium
+        )
+
+        Spacer(modifier = Modifier.height(16.dp))
+
+        if (withdrawals.isEmpty()) {
+            Card(
+                modifier = Modifier.fillMaxWidth(),
+                colors = CardDefaults.cardColors(
+                    containerColor = MaterialTheme.colorScheme.secondaryContainer
+                )
+            ) {
+                Column(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(32.dp),
+                    horizontalAlignment = Alignment.CenterHorizontally
+                ) {
+                    Text(
+                        text = "📭 No withdrawals yet",
+                        fontSize = 18.sp
+                    )
+                    Text(
+                        text = "Your withdrawal history will appear here",
+                        fontSize = 14.sp,
+                        modifier = Modifier.padding(top = 8.dp)
+                    )
+                }
+            }
+        } else {
+            LazyColumn {
+                items(withdrawals) { withdrawal ->
+                    WithdrawalHistoryItem(
+                        withdrawal = withdrawal,
+                        currencyFormat = currencyFormat,
+                        dateFormat = dateFormat
+                    )
+                }
+            }
+        }
+    }
+}
+
+@Composable
+fun WithdrawalHistoryItem(
+    withdrawal: com.writershub.app.data.model.Withdrawal,
+    currencyFormat: NumberFormat,
+    dateFormat: SimpleDateFormat
+) {
+    val statusColor = when (withdrawal.status) {
+        WithdrawalStatus.PENDING -> Color(0xFFFF9800) // Orange
+        WithdrawalStatus.DISBURSED -> Color(0xFF4CAF50) // Green
+        WithdrawalStatus.FAILED -> Color.Red
+    }
+
+    val statusText = when (withdrawal.status) {
+        WithdrawalStatus.PENDING -> "PENDING"
+        WithdrawalStatus.DISBURSED -> "DISBURSED"
+        WithdrawalStatus.FAILED -> "FAILED"
+    }
+
+    Card(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(vertical = 4.dp),
+        colors = CardDefaults.cardColors(
+            containerColor = MaterialTheme.colorScheme.surface
+        )
+    ) {
+        Column(
+            modifier = Modifier.padding(12.dp)
+        ) {
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween
+            ) {
+                Text(
+                    text = currencyFormat.format(withdrawal.amount),
+                    fontSize = 18.sp,
+                    fontWeight = androidx.compose.ui.text.font.FontWeight.Bold
+                )
+                Card(
+                    colors = CardDefaults.cardColors(
+                        containerColor = statusColor.copy(alpha = 0.2f)
+                    )
+                ) {
+                    Text(
+                        text = statusText,
+                        modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp),
+                        color = statusColor,
+                        fontSize = 12.sp
+                    )
+                }
+            }
+
+            Spacer(modifier = Modifier.height(4.dp))
+
+            Text(
+                text = "Phone: ${withdrawal.phoneNumber}",
+                fontSize = 14.sp
+            )
+
+            Text(
+                text = "Requested: ${dateFormat.format(withdrawal.requestDate)}",
+                fontSize = 12.sp,
+                color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f)
+            )
+
+            if (withdrawal.status == WithdrawalStatus.DISBURSED && withdrawal.mpesaReference != null) {
+                Text(
+                    text = "M-Pesa Ref: ${withdrawal.mpesaReference}",
+                    fontSize = 12.sp,
+                    color = Color(0xFF4CAF50)
                 )
             }
         }

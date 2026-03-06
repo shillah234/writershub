@@ -9,5 +9,6 @@ data class User(
     var walletBalance: Double = 0.0,
     var totalWithdrawn: Double = 0.0,
     var totalEarnings: Double = 0.0,
-    val completedTasks: MutableList<String> = mutableListOf()
+    val completedTasks: MutableList<String> = mutableListOf(),
+    val withdrawals: MutableList<Withdrawal> = mutableListOf()  // New
 )
