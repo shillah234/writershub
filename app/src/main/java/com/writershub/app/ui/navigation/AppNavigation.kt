@@ -15,6 +15,7 @@ import com.writershub.app.ui.screens.ShortVideosScreen
 import com.writershub.app.ui.screens.PremiumTasksScreen
 import com.writershub.app.ui.screens.SettingsScreen
 import com.writershub.app.ui.screens.TaskDetailScreen
+import com.writershub.app.ui.screens.WithdrawScreen
 
 @Composable
 fun AppNavigation() {
@@ -100,7 +101,7 @@ fun AppNavigation() {
             )
         }
 
-        // Daily Tasks (same as tasks for now)
+        // Daily Tasks
         composable("daily_tasks") {
             TasksScreen(
                 onBackClick = {
@@ -145,9 +146,19 @@ fun AppNavigation() {
             )
         }
 
+        // WITHDRAW SCREEN
+        composable("withdraw") {
+            WithdrawScreen(
+                onBackClick = {
+                    navController.popBackStack()
+                },
+                onWithdrawSuccess = {
+                    navController.popBackStack()
+                }
+            )
+        }
 
-
-        // Task Detail Screen with parameter
+        // Task Detail Screen
         composable(
             route = "task_detail/{taskId}",
             arguments = listOf(navArgument("taskId") { type = NavType.StringType })

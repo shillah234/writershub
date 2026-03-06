@@ -26,10 +26,8 @@ object SessionManager {
         return currentUser?.isActivated == true
     }
 
-    // NEW: Add money to wallet when task is completed
     fun addTaskReward(reward: Double, taskId: String) {
         currentUser?.let { user ->
-            // Check if task already completed
             if (!user.completedTasks.contains(taskId)) {
                 val newBalance = user.walletBalance + reward
                 val newTotalEarnings = user.totalEarnings + reward
@@ -43,29 +41,35 @@ object SessionManager {
         }
     }
 
-    // NEW: Withdraw money from wallet
-    fun withdrawMoney(amount: Double): Boolean {
+    fun withdrawMoney(amount: Double): String {
         currentUser?.let { user ->
-            if (user.walletBalance >= amount && amount >= 50) { // Minimum withdrawal 50 KES
-                val newBalance = user.walletBalance - amount
-                val newTotalWithdrawn = user.totalWithdrawn + amount
-
-                currentUser = user.copy(
-                    walletBalance = newBalance,
-                    totalWithdrawn = newTotalWithdrawn
-                )
-                return true
+            // Check minimum amount (KES 1000)
+            if (amount < 1000) {
+                return "MINIMUM_FAILED"
             }
+
+            // Check sufficient balance
+            if (user.walletBalance < amount) {
+                return "BALANCE_FAILED"
+            }
+
+            // Process withdrawal
+            val newBalance = user.walletBalance - amount
+            val newTotalWithdrawn = user.totalWithdrawn + amount
+
+            currentUser = user.copy(
+                walletBalance = newBalance,
+                totalWithdrawn = newTotalWithdrawn
+            )
+            return "SUCCESS"
         }
-        return false
+        return "BALANCE_FAILED"
     }
 
-    // NEW: Check if task is already completed
     fun isTaskCompleted(taskId: String): Boolean {
         return currentUser?.completedTasks?.contains(taskId) == true
     }
 
-    // NEW: Get completed tasks count
     fun getCompletedTasksCount(): Int {
         return currentUser?.completedTasks?.size ?: 0
     }

@@ -59,6 +59,11 @@ fun DashboardScreen(
                         fontSize = 14.sp,
                         color = Color.Gray
                     )
+                    Text(
+                        text = "Balance: ${currencyFormat.format(user?.walletBalance ?: 0.00)}",
+                        fontSize = 14.sp,
+                        color = MaterialTheme.colorScheme.primary
+                    )
                 }
 
                 Divider()
@@ -115,9 +120,9 @@ fun DashboardScreen(
                     }
                 )
 
-                // Withdraw - No icon
+                // Withdraw with Money icon
                 NavigationDrawerItem(
-                    icon = null,
+                    icon = { Icon(Icons.Default.Money, contentDescription = null) },
                     label = { Text("Withdraw Funds") },
                     selected = false,
                     onClick = {
@@ -170,6 +175,7 @@ fun DashboardScreen(
             ) {
                 item {
                     Column {
+                        // Welcome Text
                         Text(
                             text = "Welcome ${user?.name ?: "User"}!",
                             fontSize = 24.sp,
@@ -179,6 +185,7 @@ fun DashboardScreen(
 
                         Spacer(modifier = Modifier.height(8.dp))
 
+                        // Support Banner
                         Surface(
                             modifier = Modifier.fillMaxWidth(),
                             color = MaterialTheme.colorScheme.primaryContainer
@@ -192,11 +199,12 @@ fun DashboardScreen(
 
                         Spacer(modifier = Modifier.height(24.dp))
 
+                        // Activation Required Card (if not activated)
                         if (!isActivated) {
                             Card(
                                 modifier = Modifier.fillMaxWidth(),
                                 colors = CardDefaults.cardColors(
-                                    containerColor = Color(0xFFFFC107)
+                                    containerColor = Color(0xFFFFC107) // Yellow
                                 )
                             ) {
                                 Column(
@@ -208,7 +216,7 @@ fun DashboardScreen(
                                         color = Color.Black
                                     )
                                     Text(
-                                        text = "Pay KES 100 to access premium tasks",
+                                        text = "Pay KES 100 to access premium tasks and higher earnings",
                                         fontSize = 14.sp,
                                         color = Color.Black
                                     )
@@ -217,6 +225,7 @@ fun DashboardScreen(
                             Spacer(modifier = Modifier.height(16.dp))
                         }
 
+                        // Stats Summary Card
                         Card(
                             modifier = Modifier.fillMaxWidth(),
                             colors = CardDefaults.cardColors(
@@ -229,15 +238,20 @@ fun DashboardScreen(
                                     .padding(16.dp),
                                 horizontalArrangement = Arrangement.SpaceEvenly
                             ) {
+                                // Tasks Completed
                                 Column(horizontalAlignment = Alignment.CenterHorizontally) {
                                     Text(
                                         text = "${SessionManager.getCompletedTasksCount()}",
                                         fontSize = 20.sp,
                                         fontWeight = androidx.compose.ui.text.font.FontWeight.Bold
                                     )
-                                    Text(text = "Tasks Done", fontSize = 12.sp)
+                                    Text(
+                                        text = "Tasks Done",
+                                        fontSize = 12.sp
+                                    )
                                 }
 
+                                // Activation Status
                                 Column(horizontalAlignment = Alignment.CenterHorizontally) {
                                     Text(
                                         text = if (isActivated) "✅" else "🔒",
@@ -253,6 +267,7 @@ fun DashboardScreen(
 
                         Spacer(modifier = Modifier.height(24.dp))
 
+                        // Wallet Cards Section Title
                         Text(
                             text = "Your Wallet",
                             fontSize = 20.sp,
@@ -262,13 +277,13 @@ fun DashboardScreen(
 
                         Spacer(modifier = Modifier.height(8.dp))
 
-                        // Wallet Balance Card
+                        // WALLET BALANCE CARD (Orange)
                         Card(
                             modifier = Modifier
                                 .fillMaxWidth()
                                 .padding(vertical = 4.dp),
                             colors = CardDefaults.cardColors(
-                                containerColor = Color(0xFFFF9800)
+                                containerColor = Color(0xFFFF9800) // Orange
                             )
                         ) {
                             Row(
@@ -286,13 +301,14 @@ fun DashboardScreen(
                             }
                         }
 
+                        // TOTAL WITHDRAWN CARD (Green) - Only if activated
                         if (isActivated) {
                             Card(
                                 modifier = Modifier
                                     .fillMaxWidth()
                                     .padding(vertical = 4.dp),
                                 colors = CardDefaults.cardColors(
-                                    containerColor = Color(0xFF4CAF50)
+                                    containerColor = Color(0xFF4CAF50) // Green
                                 )
                             ) {
                                 Row(
@@ -309,13 +325,16 @@ fun DashboardScreen(
                                     )
                                 }
                             }
+                        }
 
+                        // TOTAL EARNINGS CARD (Blue) - Only if activated
+                        if (isActivated) {
                             Card(
                                 modifier = Modifier
                                     .fillMaxWidth()
                                     .padding(vertical = 4.dp),
                                 colors = CardDefaults.cardColors(
-                                    containerColor = Color(0xFF2196F3)
+                                    containerColor = Color(0xFF2196F3) // Blue
                                 )
                             ) {
                                 Row(
@@ -332,13 +351,16 @@ fun DashboardScreen(
                                     )
                                 }
                             }
-                        } else {
+                        }
+
+                        // ACTIVATION FEE CARD (Yellow) - Only if NOT activated
+                        if (!isActivated) {
                             Card(
                                 modifier = Modifier
                                     .fillMaxWidth()
                                     .padding(vertical = 4.dp),
                                 colors = CardDefaults.cardColors(
-                                    containerColor = Color(0xFFFFC107)
+                                    containerColor = Color(0xFFFFC107) // Yellow
                                 )
                             ) {
                                 Row(
@@ -355,6 +377,7 @@ fun DashboardScreen(
 
                         Spacer(modifier = Modifier.height(24.dp))
 
+                        // Quick Actions Section
                         Text(
                             text = "Quick Actions",
                             fontSize = 20.sp,
@@ -364,6 +387,7 @@ fun DashboardScreen(
 
                         Spacer(modifier = Modifier.height(8.dp))
 
+                        // Tasks Button
                         Button(
                             onClick = onTasksClick,
                             modifier = Modifier.fillMaxWidth(),
@@ -376,12 +400,13 @@ fun DashboardScreen(
 
                         Spacer(modifier = Modifier.height(8.dp))
 
+                        // Withdraw Button (only if balance > 0)
                         if ((user?.walletBalance ?: 0.0) > 0) {
                             Button(
                                 onClick = onWithdrawClick,
                                 modifier = Modifier.fillMaxWidth(),
                                 colors = ButtonDefaults.buttonColors(
-                                    containerColor = Color(0xFF4CAF50)
+                                    containerColor = Color(0xFF4CAF50) // Green
                                 )
                             ) {
                                 Text(text = "💸 Withdraw Earnings", fontSize = 16.sp)
