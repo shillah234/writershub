@@ -2,27 +2,61 @@ package com.writershub.app.data.repository
 
 import com.writershub.app.data.model.User
 import com.writershub.app.data.model.Withdrawal
-import com.writershub.app.data.model.WithdrawalStatus
-import java.util.Date
+import com.writershub.app.data.auth.FirebaseAuthManager
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
 
 object SessionManager {
     var currentUser: User? = null
         private set
 
-    fun login(user: User) {
-        currentUser = user
+    // Login with Firebase
+    suspend fun login(email: String, password: String): Result<User> {
+        return try {
+            val result = FirebaseAuthManager.login(email, password)
+            if (result.isSuccess) {
+                currentUser = result.getOrNull()
+            }
+            result
+        } catch (e: Exception) {
+            Result.failure(e)
+        }
     }
 
-    fun register(user: User) {
-        currentUser = user
+    // Register with Firebase
+    suspend fun register(
+        name: String,
+        email: String,
+        phone: String,
+        password: String
+    ): Result<User> {
+        return try {
+            val result = FirebaseAuthManager.signUp(email, password, name, phone)
+            if (result.isSuccess) {
+                currentUser = result.getOrNull()
+            }
+            result
+        } catch (e: Exception) {
+            Result.failure(e)
+        }
     }
 
+    // Activate account
     fun activateAccount() {
         currentUser = currentUser?.copy(isActivated = true)
+        // Update in Firebase
+        currentUser?.let { user ->
+            CoroutineScope(Dispatchers.IO).launch {
+                FirebaseAuthManager.updateUser(user)
+            }
+        }
     }
 
+    // Logout
     fun logout() {
         currentUser = null
+        FirebaseAuthManager.logout()
     }
 
     fun isUserActivated(): Boolean {
@@ -40,54 +74,49 @@ object SessionManager {
                     walletBalance = newBalance,
                     totalEarnings = newTotalEarnings
                 )
+
+                // Update in Firebase
+                CoroutineScope(Dispatchers.IO).launch {
+                    FirebaseAuthManager.updateUser(currentUser!!)
+                }
             }
         }
     }
 
-    // UPDATED withdraw function with phone number
     fun requestWithdrawal(amount: Double, phoneNumber: String): String {
         currentUser?.let { user ->
-            // Check minimum amount (KES 1000)
-            if (amount < 1000) {
-                return "MINIMUM_FAILED"
-            }
+            if (amount < 1000) return "MINIMUM_FAILED"
+            if (user.walletBalance < amount) return "BALANCE_FAILED"
+            if (!phoneNumber.matches(Regex("^(07|01)\\d{8}$"))) return "INVALID_PHONE"
 
-            // Check sufficient balance
-            if (user.walletBalance < amount) {
-                return "BALANCE_FAILED"
-            }
-
-            // Validate phone number
-            if (!phoneNumber.matches(Regex("^(07|01)\\d{8}$"))) {
-                return "INVALID_PHONE"
-            }
-
-            // Process withdrawal
             val newBalance = user.walletBalance - amount
             val newTotalWithdrawn = user.totalWithdrawn + amount
 
-            // Create withdrawal record
             val withdrawal = Withdrawal(
                 amount = amount,
                 phoneNumber = phoneNumber,
-                status = WithdrawalStatus.PENDING,
-                requestDate = Date()
+                status = com.writershub.app.data.model.WithdrawalStatus.PENDING,
+                requestDate = java.util.Date()
             )
 
-            // Add to user's withdrawals list
-            user.withdrawals.add(0, withdrawal) // Add to beginning
+            user.withdrawals.add(0, withdrawal)
 
             currentUser = user.copy(
                 walletBalance = newBalance,
                 totalWithdrawn = newTotalWithdrawn,
                 withdrawals = user.withdrawals
             )
+
+            // Update in Firebase
+            CoroutineScope(Dispatchers.IO).launch {
+                FirebaseAuthManager.updateUser(currentUser!!)
+            }
+
             return "SUCCESS"
         }
         return "BALANCE_FAILED"
     }
 
-    // Get withdrawal history
     fun getWithdrawalHistory(): List<Withdrawal> {
         return currentUser?.withdrawals ?: emptyList()
     }

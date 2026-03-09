@@ -1,6 +1,7 @@
 plugins {
     alias(libs.plugins.android.application)
     alias(libs.plugins.kotlin.compose)
+    id("com.google.gms.google-services")
 }
 
 android {
@@ -10,7 +11,7 @@ android {
     }
 
     defaultConfig {
-        applicationId = "com.example.writershub"
+        applicationId = "com.writershub.app"
         minSdk = 24
         targetSdk = 36
         versionCode = 1
@@ -49,6 +50,9 @@ dependencies {
     implementation("androidx.navigation:navigation-compose:2.7.7")
     testImplementation(libs.junit)
     implementation("androidx.compose.material:material-icons-extended:1.6.0")
+    implementation(platform("com.google.firebase:firebase-bom:32.8.0"))
+    implementation("com.google.firebase:firebase-auth-ktx")
+    implementation("com.google.firebase:firebase-firestore-ktx")
     androidTestImplementation(libs.androidx.junit)
     androidTestImplementation(libs.androidx.espresso.core)
     androidTestImplementation(platform(libs.androidx.compose.bom))
