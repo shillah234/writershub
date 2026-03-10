@@ -25,7 +25,8 @@ fun DashboardScreen(
     onShortVideosClick: () -> Unit,
     onPremiumTasksClick: () -> Unit,
     onSettingsClick: () -> Unit,
-    onWithdrawClick: () -> Unit
+    onWithdrawClick: () -> Unit,
+    onTransactionHistoryClick: () -> Unit  // 👈 NEW PARAMETER ADDED
 ) {
     val isActivated = SessionManager.isUserActivated()
     val user = SessionManager.currentUser
@@ -117,6 +118,17 @@ fun DashboardScreen(
                     onClick = {
                         scope.launch { drawerState.close() }
                         onSettingsClick()
+                    }
+                )
+
+                // 👇 NEW: Transaction History Item
+                NavigationDrawerItem(
+                    icon = { Icon(Icons.Default.History, contentDescription = null) },
+                    label = { Text("Transaction History") },
+                    selected = false,
+                    onClick = {
+                        scope.launch { drawerState.close() }
+                        onTransactionHistoryClick()
                     }
                 )
 

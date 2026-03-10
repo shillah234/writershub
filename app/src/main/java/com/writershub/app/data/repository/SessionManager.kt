@@ -2,10 +2,13 @@ package com.writershub.app.data.repository
 
 import com.writershub.app.data.model.User
 import com.writershub.app.data.model.Withdrawal
+import com.writershub.app.data.model.Transaction
+import com.writershub.app.data.model.TransactionType
 import com.writershub.app.data.auth.FirebaseAuthManager
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
+import java.util.Date
 
 object SessionManager {
     var currentUser: User? = null
@@ -75,6 +78,14 @@ object SessionManager {
                     totalEarnings = newTotalEarnings
                 )
 
+                // Add transaction record
+                addTransaction(
+                    type = TransactionType.TASK_EARNING,
+                    amount = reward,
+                    description = "Earned from task",
+                    taskId = taskId
+                )
+
                 // Update in Firebase
                 CoroutineScope(Dispatchers.IO).launch {
                     FirebaseAuthManager.updateUser(currentUser!!)
@@ -96,7 +107,7 @@ object SessionManager {
                 amount = amount,
                 phoneNumber = phoneNumber,
                 status = com.writershub.app.data.model.WithdrawalStatus.PENDING,
-                requestDate = java.util.Date()
+                requestDate = Date()
             )
 
             user.withdrawals.add(0, withdrawal)
@@ -107,6 +118,14 @@ object SessionManager {
                 withdrawals = user.withdrawals
             )
 
+            // Add transaction record
+            addTransaction(
+                type = TransactionType.WITHDRAWAL,
+                amount = amount,
+                description = "Withdrawal to $phoneNumber",
+                withdrawalId = withdrawal.id
+            )
+
             // Update in Firebase
             CoroutineScope(Dispatchers.IO).launch {
                 FirebaseAuthManager.updateUser(currentUser!!)
@@ -115,6 +134,30 @@ object SessionManager {
             return "SUCCESS"
         }
         return "BALANCE_FAILED"
+    }
+
+    // NEW FUNCTION: Add transaction to history
+    fun addTransaction(type: TransactionType, amount: Double, description: String, taskId: String? = null, withdrawalId: String? = null) {
+        currentUser?.let { user ->
+            val transaction = Transaction(
+                id = System.currentTimeMillis().toString(),
+                userId = user.id,
+                type = type,
+                amount = amount,
+                description = description,
+                date = Date(),
+                taskId = taskId,
+                withdrawalId = withdrawalId
+            )
+
+            user.transactions.add(0, transaction)
+            currentUser = user.copy(transactions = user.transactions)
+
+            // Update in Firebase
+            CoroutineScope(Dispatchers.IO).launch {
+                FirebaseAuthManager.updateUser(currentUser!!)
+            }
+        }
     }
 
     fun getWithdrawalHistory(): List<Withdrawal> {

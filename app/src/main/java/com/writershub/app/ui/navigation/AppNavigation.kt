@@ -16,6 +16,7 @@ import com.writershub.app.ui.screens.PremiumTasksScreen
 import com.writershub.app.ui.screens.SettingsScreen
 import com.writershub.app.ui.screens.TaskDetailScreen
 import com.writershub.app.ui.screens.WithdrawScreen
+import com.writershub.app.ui.screens.TransactionHistoryScreen  // 👈 NEW IMPORT
 
 @Composable
 fun AppNavigation() {
@@ -61,7 +62,7 @@ fun AppNavigation() {
             )
         }
 
-        // Dashboard Screen
+        // Dashboard Screen - UPDATED with transaction history click
         composable("dashboard") {
             DashboardScreen(
                 onTasksClick = {
@@ -85,6 +86,9 @@ fun AppNavigation() {
                 },
                 onWithdrawClick = {
                     navController.navigate("withdraw")
+                },
+                onTransactionHistoryClick = {  // 👈 NEW CLICK HANDLER
+                    navController.navigate("transaction_history")
                 }
             )
         }
@@ -146,13 +150,22 @@ fun AppNavigation() {
             )
         }
 
-        // WITHDRAW SCREEN
+        // Withdraw Screen
         composable("withdraw") {
             WithdrawScreen(
                 onBackClick = {
                     navController.popBackStack()
                 },
                 onWithdrawSuccess = {
+                    navController.popBackStack()
+                }
+            )
+        }
+
+        // 👈 NEW: Transaction History Screen
+        composable("transaction_history") {
+            TransactionHistoryScreen(
+                onBackClick = {
                     navController.popBackStack()
                 }
             )

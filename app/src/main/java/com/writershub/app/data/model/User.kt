@@ -10,5 +10,6 @@ data class User(
     var totalWithdrawn: Double = 0.0,
     var totalEarnings: Double = 0.0,
     val completedTasks: MutableList<String> = mutableListOf(),
-    val withdrawals: MutableList<Withdrawal> = mutableListOf()  // New
+    val withdrawals: MutableList<Withdrawal> = mutableListOf(), // 👈 ADD COMMA HERE
+    val transactions: MutableList<Transaction> = mutableListOf()
 )
