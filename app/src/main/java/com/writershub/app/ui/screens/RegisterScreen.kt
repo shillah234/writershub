@@ -8,7 +8,11 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.compose.ui.graphics.Color
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.PersonAdd
 import kotlinx.coroutines.launch
+import com.writershub.app.MainActivity
 import com.writershub.app.data.repository.SessionManager
 
 @Composable
@@ -21,6 +25,11 @@ fun RegisterScreen(
     var phone by remember { mutableStateOf("") }
     var password by remember { mutableStateOf("") }
     var confirmPassword by remember { mutableStateOf("") }
+
+    // 👇 UPDATED: Get referral code from deep link if available
+    var referralCode by remember { mutableStateOf(MainActivity.deepLinkReferralCode ?: "") }
+    var showReferralInfo by remember { mutableStateOf(MainActivity.deepLinkReferralCode != null) }
+
     var isLoading by remember { mutableStateOf(false) }
     var errorMessage by remember { mutableStateOf("") }
 
@@ -41,6 +50,43 @@ fun RegisterScreen(
 
         Spacer(modifier = Modifier.height(30.dp))
 
+        // 👇 NEW: Show referral info banner if opened from link
+        if (showReferralInfo) {
+            Card(
+                modifier = Modifier.fillMaxWidth(),
+                colors = CardDefaults.cardColors(
+                    containerColor = Color(0xFF4CAF50).copy(alpha = 0.1f)
+                )
+            ) {
+                Row(
+                    modifier = Modifier.padding(12.dp),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Icon(
+                        Icons.Default.PersonAdd,
+                        contentDescription = null,
+                        tint = Color(0xFF4CAF50)
+                    )
+                    Spacer(modifier = Modifier.width(8.dp))
+                    Column {
+                        Text(
+                            text = "🎁 You were referred!",
+                            fontSize = 14.sp,
+                            fontWeight = androidx.compose.ui.text.font.FontWeight.Bold,
+                            color = Color(0xFF4CAF50)
+                        )
+                        Text(
+                            text = "Code: $referralCode",
+                            fontSize = 12.sp,
+                            color = Color(0xFF4CAF50)
+                        )
+                    }
+                }
+            }
+            Spacer(modifier = Modifier.height(8.dp))
+        }
+
+        // Full Name Field
         OutlinedTextField(
             value = fullName,
             onValueChange = {
@@ -55,6 +101,7 @@ fun RegisterScreen(
 
         Spacer(modifier = Modifier.height(8.dp))
 
+        // Email Field
         OutlinedTextField(
             value = email,
             onValueChange = {
@@ -69,6 +116,7 @@ fun RegisterScreen(
 
         Spacer(modifier = Modifier.height(8.dp))
 
+        // Phone Field
         OutlinedTextField(
             value = phone,
             onValueChange = {
@@ -83,6 +131,23 @@ fun RegisterScreen(
 
         Spacer(modifier = Modifier.height(8.dp))
 
+        // 👇 UPDATED: Referral Code Field (auto-filled if from deep link)
+        OutlinedTextField(
+            value = referralCode,
+            onValueChange = {
+                referralCode = it.uppercase()
+                errorMessage = ""
+            },
+            label = { Text("Referral Code (Optional)") },
+            modifier = Modifier.fillMaxWidth(),
+            singleLine = true,
+            enabled = !isLoading && !showReferralInfo, // Disable if auto-filled
+            placeholder = { Text("e.g., JOH1234") }
+        )
+
+        Spacer(modifier = Modifier.height(8.dp))
+
+        // Password Field
         OutlinedTextField(
             value = password,
             onValueChange = {
@@ -98,6 +163,7 @@ fun RegisterScreen(
 
         Spacer(modifier = Modifier.height(8.dp))
 
+        // Confirm Password Field
         OutlinedTextField(
             value = confirmPassword,
             onValueChange = {
@@ -113,6 +179,7 @@ fun RegisterScreen(
 
         Spacer(modifier = Modifier.height(8.dp))
 
+        // Error Message
         if (errorMessage.isNotEmpty()) {
             Text(
                 text = errorMessage,
@@ -124,6 +191,7 @@ fun RegisterScreen(
 
         Spacer(modifier = Modifier.height(16.dp))
 
+        // Register Button
         Button(
             onClick = {
                 // Validation
@@ -148,15 +216,24 @@ fun RegisterScreen(
                     return@Button
                 }
 
+                // Referral code validation (optional)
+                if (referralCode.isNotBlank() && !referralCode.matches(Regex("^[A-Z0-9]{7}$"))) {
+                    errorMessage = "Invalid referral code format"
+                    return@Button
+                }
+
                 isLoading = true
                 scope.launch {
-                    val result = SessionManager.register(fullName, email, phone, password)
+                    val code = if (referralCode.isBlank()) null else referralCode
+                    val result = SessionManager.register(fullName, email, phone, password, code)
                     isLoading = false
 
                     if (result.isSuccess) {
+                        // 👇 Clear deep link code after successful registration
+                        MainActivity.deepLinkReferralCode = null
                         onRegisterClick()
                     } else {
-                        errorMessage = "Registration failed. Email may already be in use."
+                        errorMessage = result.exceptionOrNull()?.message ?: "Registration failed"
                     }
                 }
             },
@@ -175,11 +252,35 @@ fun RegisterScreen(
 
         Spacer(modifier = Modifier.height(12.dp))
 
+        // Login Link
         TextButton(
             onClick = onLoginClick,
             enabled = !isLoading
         ) {
             Text("Already have an account? Login")
+        }
+
+        // 👇 UPDATED: Info about referral bonus (different message if from deep link)
+        if (!isLoading) {
+            Spacer(modifier = Modifier.height(16.dp))
+            Card(
+                modifier = Modifier.fillMaxWidth(),
+                colors = CardDefaults.cardColors(
+                    containerColor = MaterialTheme.colorScheme.primaryContainer
+                )
+            ) {
+                Text(
+                    text = if (showReferralInfo) {
+                        "🎁 You'll get KES 20 after completing your first task!"
+                    } else {
+                        "🎁 Referral Bonus: You get KES 20 when someone uses your code!\n" +
+                                "Enter a friend's code above to help them earn too."
+                    },
+                    fontSize = 12.sp,
+                    modifier = Modifier.padding(12.dp),
+                    color = MaterialTheme.colorScheme.onPrimaryContainer
+                )
+            }
         }
     }
 }

@@ -26,7 +26,8 @@ fun DashboardScreen(
     onPremiumTasksClick: () -> Unit,
     onSettingsClick: () -> Unit,
     onWithdrawClick: () -> Unit,
-    onTransactionHistoryClick: () -> Unit  // 👈 NEW PARAMETER ADDED
+    onTransactionHistoryClick: () -> Unit,
+    onReferralClick: () -> Unit  // 👈 NEW PARAMETER
 ) {
     val isActivated = SessionManager.isUserActivated()
     val user = SessionManager.currentUser
@@ -111,6 +112,27 @@ fun DashboardScreen(
 
                 Divider()
 
+                // 👇 NEW: Referral Item
+                NavigationDrawerItem(
+                    icon = { Icon(Icons.Default.PersonAdd, contentDescription = null) },
+                    label = {
+                        Row {
+                            Text("Refer & Earn")
+                            Spacer(modifier = Modifier.width(4.dp))
+                            Badge(
+                                containerColor = Color(0xFF4CAF50)
+                            ) {
+                                Text("KES ${SessionManager.getReferralEarnings().toInt()}")
+                            }
+                        }
+                    },
+                    selected = false,
+                    onClick = {
+                        scope.launch { drawerState.close() }
+                        onReferralClick()
+                    }
+                )
+
                 NavigationDrawerItem(
                     icon = { Icon(Icons.Default.Settings, contentDescription = null) },
                     label = { Text("Settings") },
@@ -121,7 +143,7 @@ fun DashboardScreen(
                     }
                 )
 
-                // 👇 NEW: Transaction History Item
+                // Transaction History Item
                 NavigationDrawerItem(
                     icon = { Icon(Icons.Default.History, contentDescription = null) },
                     label = { Text("Transaction History") },
@@ -274,6 +296,24 @@ fun DashboardScreen(
                                         fontSize = 12.sp
                                     )
                                 }
+
+                                // 👇 NEW: Referral Earnings Preview
+                                Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                                    Text(
+                                        text = "🎁",
+                                        fontSize = 20.sp
+                                    )
+                                    Text(
+                                        text = "Referrals",
+                                        fontSize = 12.sp
+                                    )
+                                    Text(
+                                        text = "${SessionManager.getReferralCount()}",
+                                        fontSize = 14.sp,
+                                        fontWeight = androidx.compose.ui.text.font.FontWeight.Bold,
+                                        color = Color(0xFF4CAF50)
+                                    )
+                                }
                             }
                         }
 
@@ -365,6 +405,30 @@ fun DashboardScreen(
                             }
                         }
 
+                        // 👇 NEW: Referral Earnings Card (Always visible)
+                        Card(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(vertical = 4.dp),
+                            colors = CardDefaults.cardColors(
+                                containerColor = Color(0xFF9C27B0) // Purple
+                            )
+                        ) {
+                            Row(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .padding(16.dp),
+                                horizontalArrangement = Arrangement.SpaceBetween
+                            ) {
+                                Text(text = "🎁 Referral Earnings", color = Color.White)
+                                Text(
+                                    text = currencyFormat.format(SessionManager.getReferralEarnings()),
+                                    color = Color.White,
+                                    fontSize = 20.sp
+                                )
+                            }
+                        }
+
                         // ACTIVATION FEE CARD (Yellow) - Only if NOT activated
                         if (!isActivated) {
                             Card(
@@ -408,6 +472,19 @@ fun DashboardScreen(
                             )
                         ) {
                             Text(text = "📋 View Available Tasks", fontSize = 16.sp)
+                        }
+
+                        Spacer(modifier = Modifier.height(8.dp))
+
+                        // Referral Button
+                        Button(
+                            onClick = onReferralClick,
+                            modifier = Modifier.fillMaxWidth(),
+                            colors = ButtonDefaults.buttonColors(
+                                containerColor = Color(0xFF9C27B0) // Purple
+                            )
+                        ) {
+                            Text(text = "🎁 Refer & Earn KES 20", fontSize = 16.sp)
                         }
 
                         Spacer(modifier = Modifier.height(8.dp))

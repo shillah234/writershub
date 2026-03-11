@@ -16,10 +16,30 @@
             android:exported="true"
             android:label="@string/app_name"
             android:theme="@style/Theme.Writershub">
+
+            <!-- Intent filter for normal app launch -->
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
-
                 <category android:name="android.intent.category.LAUNCHER" />
+            </intent-filter>
+
+            <!-- Intent filter for deep linking (https) -->
+            <intent-filter>
+                <action android:name="android.intent.action.VIEW" />
+                <category android:name="android.intent.category.DEFAULT" />
+                <category android:name="android.intent.category.BROWSABLE" />
+                <data
+                    android:scheme="https"
+                    android:host="shillah234.github.io"
+                    android:pathPrefix="/-writershub-landing" />
+            </intent-filter>
+
+            <!-- 👇 NEW: Custom scheme for app opening -->
+            <intent-filter>
+                <action android:name="android.intent.action.VIEW" />
+                <category android:name="android.intent.category.DEFAULT" />
+                <category android:name="android.intent.category.BROWSABLE" />
+                <data android:scheme="writershub" />
             </intent-filter>
         </activity>
     </application>

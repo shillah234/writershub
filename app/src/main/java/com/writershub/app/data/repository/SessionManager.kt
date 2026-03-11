@@ -4,7 +4,9 @@ import com.writershub.app.data.model.User
 import com.writershub.app.data.model.Withdrawal
 import com.writershub.app.data.model.Transaction
 import com.writershub.app.data.model.TransactionType
+import com.writershub.app.data.model.Referral
 import com.writershub.app.data.auth.FirebaseAuthManager
+import com.writershub.app.data.utils.ReferralCodeGenerator
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
@@ -27,15 +29,16 @@ object SessionManager {
         }
     }
 
-    // Register with Firebase
+    // Register with Firebase - UPDATED with referral code
     suspend fun register(
         name: String,
         email: String,
         phone: String,
-        password: String
+        password: String,
+        referralCode: String? = null  // 👈 NEW: Optional referral code
     ): Result<User> {
         return try {
-            val result = FirebaseAuthManager.signUp(email, password, name, phone)
+            val result = FirebaseAuthManager.signUp(email, password, name, phone, referralCode)
             if (result.isSuccess) {
                 currentUser = result.getOrNull()
             }
@@ -136,7 +139,7 @@ object SessionManager {
         return "BALANCE_FAILED"
     }
 
-    // NEW FUNCTION: Add transaction to history
+    // 👇 NEW: Add transaction function
     fun addTransaction(type: TransactionType, amount: Double, description: String, taskId: String? = null, withdrawalId: String? = null) {
         currentUser?.let { user ->
             val transaction = Transaction(
@@ -158,6 +161,41 @@ object SessionManager {
                 FirebaseAuthManager.updateUser(currentUser!!)
             }
         }
+    }
+
+    // 👇 NEW: Get user's referral code
+    fun getMyReferralCode(): String {
+        return currentUser?.referralCode ?: ""
+    }
+
+    // 👇 NEW: Get number of people referred
+    fun getReferralCount(): Int {
+        return currentUser?.referrals?.size ?: 0
+    }
+
+    // 👇 NEW: Get total referral earnings
+    fun getReferralEarnings(): Double {
+        return currentUser?.referralEarnings ?: 0.0
+    }
+
+    // 👇 NEW: Get list of people referred
+    fun getReferrals(): List<String> {
+        return currentUser?.referrals ?: emptyList()
+    }
+
+    // 👇 NEW: Generate a new referral code (if needed)
+    fun generateNewReferralCode(): String {
+        val newCode = ReferralCodeGenerator.generateSecureCode()
+        currentUser = currentUser?.copy(referralCode = newCode)
+
+        // Update in Firebase
+        currentUser?.let { user ->
+            CoroutineScope(Dispatchers.IO).launch {
+                FirebaseAuthManager.updateUser(user)
+            }
+        }
+
+        return newCode
     }
 
     fun getWithdrawalHistory(): List<Withdrawal> {
