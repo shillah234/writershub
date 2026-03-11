@@ -6,9 +6,9 @@
         android:allowBackup="true"
         android:dataExtractionRules="@xml/data_extraction_rules"
         android:fullBackupContent="@xml/backup_rules"
-        android:icon="@mipmap/ic_launcher"
+        android:icon="@mipmap/writershub"
         android:label="@string/app_name"
-        android:roundIcon="@mipmap/ic_launcher_round"
+        android:roundIcon="@mipmap/writershub"
         android:supportsRtl="true"
         android:theme="@style/Theme.Writershub">
         <activity
@@ -34,7 +34,7 @@
                     android:pathPrefix="/-writershub-landing" />
             </intent-filter>
 
-            <!-- 👇 NEW: Custom scheme for app opening -->
+            <!-- Custom scheme for app opening -->
             <intent-filter>
                 <action android:name="android.intent.action.VIEW" />
                 <category android:name="android.intent.category.DEFAULT" />
