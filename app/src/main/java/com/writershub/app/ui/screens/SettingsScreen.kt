@@ -5,15 +5,29 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.ArrowBack
 import com.writershub.app.data.repository.SessionManager
+import com.writershub.app.data.model.User
+
+// Helper function to get user's full name
+fun getUserFullName(user: User?): String {
+    return if (user != null) {
+        "${user.firstName} ${user.lastName}".trim().ifEmpty { "User" }
+    } else {
+        "User"
+    }
+}
 
 @Composable
 fun SettingsScreen(
     onBackClick: () -> Unit
 ) {
     val user = SessionManager.currentUser
+    val fullName = getUserFullName(user)
 
     Column(
         modifier = Modifier
@@ -23,18 +37,16 @@ fun SettingsScreen(
         // Header
         Row(
             modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.SpaceBetween,
             verticalAlignment = Alignment.CenterVertically
         ) {
+            IconButton(onClick = onBackClick) {
+                Icon(Icons.Default.ArrowBack, contentDescription = "Back")
+            }
             Text(
                 text = "Settings",
                 fontSize = 24.sp,
-                style = MaterialTheme.typography.headlineMedium
+                modifier = Modifier.padding(start = 8.dp)
             )
-
-            Button(onClick = onBackClick) {
-                Text("Back")
-            }
         }
 
         Spacer(modifier = Modifier.height(24.dp))
@@ -54,13 +66,18 @@ fun SettingsScreen(
 
                 Spacer(modifier = Modifier.height(8.dp))
 
-                SettingItem("Name", user?.name ?: "User")
+                // UPDATED: Using firstName and lastName
+                SettingItem("Full Name", fullName)
+                Divider()
+                SettingItem("Username", user?.username ?: "Not set")
                 Divider()
                 SettingItem("Email", user?.email ?: "email@example.com")
                 Divider()
                 SettingItem("Phone", user?.phone ?: "07XXXXXXXX")
                 Divider()
                 SettingItem("Account Status", if (user?.isActivated == true) "Activated" else "Not Activated")
+                Divider()
+                SettingItem("Referral Code", user?.referralCode ?: "Not set")
             }
         }
 
@@ -112,6 +129,46 @@ fun SettingsScreen(
                 }
             }
         }
+
+        Spacer(modifier = Modifier.height(16.dp))
+
+        // Referral Info Card
+        Card(
+            modifier = Modifier.fillMaxWidth(),
+            colors = CardDefaults.cardColors(
+                containerColor = Color(0xFF9C27B0).copy(alpha = 0.1f)
+            )
+        ) {
+            Column(
+                modifier = Modifier.padding(16.dp)
+            ) {
+                Text(
+                    text = "🎁 Your Referral Code",
+                    fontSize = 18.sp,
+                    style = MaterialTheme.typography.titleMedium,
+                    color = Color(0xFF9C27B0)
+                )
+
+                Spacer(modifier = Modifier.height(8.dp))
+
+                Text(
+                    text = user?.referralCode ?: "Not available",
+                    fontSize = 24.sp,
+                    fontWeight = androidx.compose.ui.text.font.FontWeight.Bold,
+                    color = Color(0xFF9C27B0),
+                    modifier = Modifier.align(Alignment.CenterHorizontally)
+                )
+
+                Spacer(modifier = Modifier.height(4.dp))
+
+                Text(
+                    text = "Share this code with friends to earn KES 20 each!",
+                    fontSize = 14.sp,
+                    color = Color.Gray,
+                    modifier = Modifier.align(Alignment.CenterHorizontally)
+                )
+            }
+        }
     }
 }
 
@@ -130,7 +187,9 @@ fun SettingItem(label: String, value: String) {
         )
         Text(
             text = value,
-            fontSize = 16.sp
+            fontSize = 16.sp,
+            fontWeight = if (label == "Referral Code") androidx.compose.ui.text.font.FontWeight.Bold else null,
+            color = if (label == "Referral Code") Color(0xFF9C27B0) else MaterialTheme.colorScheme.onSurface
         )
     }
 }

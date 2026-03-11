@@ -20,15 +20,18 @@ fun RegisterScreen(
     onRegisterClick: () -> Unit,
     onLoginClick: () -> Unit
 ) {
-    var fullName by remember { mutableStateOf("") }
+    var firstName by remember { mutableStateOf("") }
+    var lastName by remember { mutableStateOf("") }
+    var username by remember { mutableStateOf("") }
     var email by remember { mutableStateOf("") }
     var phone by remember { mutableStateOf("") }
     var password by remember { mutableStateOf("") }
     var confirmPassword by remember { mutableStateOf("") }
 
-    // 👇 UPDATED: Get referral code from deep link if available
-    var referralCode by remember { mutableStateOf(MainActivity.deepLinkReferralCode ?: "") }
-    var showReferralInfo by remember { mutableStateOf(MainActivity.deepLinkReferralCode != null) }
+    // Get referral code from deep link if available
+    val initialReferralCode = MainActivity.deepLinkReferralCode ?: ""
+    var referralCode by remember { mutableStateOf(initialReferralCode) }
+    var showReferralInfo by remember { mutableStateOf(initialReferralCode.isNotBlank()) }
 
     var isLoading by remember { mutableStateOf(false) }
     var errorMessage by remember { mutableStateOf("") }
@@ -50,7 +53,7 @@ fun RegisterScreen(
 
         Spacer(modifier = Modifier.height(30.dp))
 
-        // 👇 NEW: Show referral info banner if opened from link
+        // Show referral info banner if opened from link
         if (showReferralInfo) {
             Card(
                 modifier = Modifier.fillMaxWidth(),
@@ -86,17 +89,48 @@ fun RegisterScreen(
             Spacer(modifier = Modifier.height(8.dp))
         }
 
-        // Full Name Field
+        // First Name Field
         OutlinedTextField(
-            value = fullName,
+            value = firstName,
             onValueChange = {
-                fullName = it
+                firstName = it
                 errorMessage = ""
             },
-            label = { Text("Full Name") },
+            label = { Text("First Name") },
             modifier = Modifier.fillMaxWidth(),
             singleLine = true,
             enabled = !isLoading
+        )
+
+        Spacer(modifier = Modifier.height(8.dp))
+
+        // Last Name Field
+        OutlinedTextField(
+            value = lastName,
+            onValueChange = {
+                lastName = it
+                errorMessage = ""
+            },
+            label = { Text("Last Name") },
+            modifier = Modifier.fillMaxWidth(),
+            singleLine = true,
+            enabled = !isLoading
+        )
+
+        Spacer(modifier = Modifier.height(8.dp))
+
+        // Username Field (NEW)
+        OutlinedTextField(
+            value = username,
+            onValueChange = {
+                username = it.lowercase().replace(" ", "") // Auto lowercase, no spaces
+                errorMessage = ""
+            },
+            label = { Text("Username") },
+            modifier = Modifier.fillMaxWidth(),
+            singleLine = true,
+            enabled = !isLoading,
+            placeholder = { Text("john76") }
         )
 
         Spacer(modifier = Modifier.height(8.dp))
@@ -126,23 +160,26 @@ fun RegisterScreen(
             label = { Text("Phone Number") },
             modifier = Modifier.fillMaxWidth(),
             singleLine = true,
-            enabled = !isLoading
+            enabled = !isLoading,
+            placeholder = { Text("07XXXXXXXX") }
         )
 
         Spacer(modifier = Modifier.height(8.dp))
 
-        // 👇 UPDATED: Referral Code Field (auto-filled if from deep link)
+        // Referral Code Field (auto-filled if from deep link)
         OutlinedTextField(
             value = referralCode,
             onValueChange = {
-                referralCode = it.uppercase()
-                errorMessage = ""
+                if (!showReferralInfo) {
+                    referralCode = it.uppercase()
+                    errorMessage = ""
+                }
             },
             label = { Text("Referral Code (Optional)") },
             modifier = Modifier.fillMaxWidth(),
             singleLine = true,
-            enabled = !isLoading && !showReferralInfo, // Disable if auto-filled
-            placeholder = { Text("e.g., JOH1234") }
+            enabled = !isLoading && !showReferralInfo,
+            placeholder = { Text("e.g., john7612") }
         )
 
         Spacer(modifier = Modifier.height(8.dp))
@@ -195,8 +232,8 @@ fun RegisterScreen(
         Button(
             onClick = {
                 // Validation
-                if (fullName.isBlank() || email.isBlank() || phone.isBlank() ||
-                    password.isBlank() || confirmPassword.isBlank()) {
+                if (firstName.isBlank() || lastName.isBlank() || username.isBlank() ||
+                    email.isBlank() || phone.isBlank() || password.isBlank() || confirmPassword.isBlank()) {
                     errorMessage = "Please fill all fields"
                     return@Button
                 }
@@ -216,8 +253,14 @@ fun RegisterScreen(
                     return@Button
                 }
 
+                // Username validation (letters, numbers, underscore only)
+                if (!username.matches(Regex("^[a-z0-9_]{3,20}$"))) {
+                    errorMessage = "Username must be 3-20 chars (lowercase, numbers, _ only)"
+                    return@Button
+                }
+
                 // Referral code validation (optional)
-                if (referralCode.isNotBlank() && !referralCode.matches(Regex("^[A-Z0-9]{7}$"))) {
+                if (referralCode.isNotBlank() && !referralCode.matches(Regex("^[a-z0-9]{6,}$"))) {
                     errorMessage = "Invalid referral code format"
                     return@Button
                 }
@@ -225,11 +268,18 @@ fun RegisterScreen(
                 isLoading = true
                 scope.launch {
                     val code = if (referralCode.isBlank()) null else referralCode
-                    val result = SessionManager.register(fullName, email, phone, password, code)
+                    val result = SessionManager.register(
+                        firstName = firstName,
+                        lastName = lastName,
+                        username = username.lowercase(),
+                        email = email,
+                        phone = phone,
+                        password = password,
+                        referralCode = code
+                    )
                     isLoading = false
 
                     if (result.isSuccess) {
-                        // 👇 Clear deep link code after successful registration
                         MainActivity.deepLinkReferralCode = null
                         onRegisterClick()
                     } else {
@@ -260,7 +310,7 @@ fun RegisterScreen(
             Text("Already have an account? Login")
         }
 
-        // 👇 UPDATED: Info about referral bonus (different message if from deep link)
+        // Info about referral bonus
         if (!isLoading) {
             Spacer(modifier = Modifier.height(16.dp))
             Card(

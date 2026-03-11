@@ -1,18 +1,29 @@
 package com.writershub.app.data.utils
 
-import java.util.UUID
+import kotlin.random.Random
 
 object ReferralCodeGenerator {
 
-    fun generateCode(name: String): String {
-        // Take first 3 letters of name (uppercase) + random 4 digits
-        val namePart = name.take(3).uppercase()
-        val randomPart = (1000..9999).random().toString()
-        return "$namePart$randomPart"
+    // Generate code from username + 2 digits (for new users)
+    fun generateCode(username: String): String {
+        val usernamePart = username.lowercase()
+        val randomPart = Random.nextInt(10, 99).toString()
+        return "$usernamePart$randomPart"
     }
 
+    // Generate a secure random code (6 chars, lowercase + numbers)
     fun generateSecureCode(): String {
-        // Generate a random 8-character code
-        return UUID.randomUUID().toString().take(8).uppercase()
+        val chars = ('a'..'z') + ('0'..'9')
+        return (1..6)
+            .map { chars.random() }
+            .joinToString("")
+    }
+
+    // Alternative: Generate code with custom length
+    fun generateSecureCode(length: Int): String {
+        val chars = ('a'..'z') + ('0'..'9')
+        return (1..length)
+            .map { chars.random() }
+            .joinToString("")
     }
 }

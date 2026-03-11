@@ -13,8 +13,18 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.*
 import kotlinx.coroutines.launch
 import com.writershub.app.data.repository.SessionManager
+import com.writershub.app.data.model.User
 import java.text.NumberFormat
 import java.util.Locale
+
+// Helper function to get user's full name
+fun getUserDisplayName(user: User?): String {
+    return if (user != null) {
+        "${user.firstName} ${user.lastName}".trim().ifEmpty { "User" }
+    } else {
+        "User"
+    }
+}
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -27,7 +37,7 @@ fun DashboardScreen(
     onSettingsClick: () -> Unit,
     onWithdrawClick: () -> Unit,
     onTransactionHistoryClick: () -> Unit,
-    onReferralClick: () -> Unit  // 👈 NEW PARAMETER
+    onReferralClick: () -> Unit
 ) {
     val isActivated = SessionManager.isUserActivated()
     val user = SessionManager.currentUser
@@ -41,7 +51,7 @@ fun DashboardScreen(
         drawerState = drawerState,
         drawerContent = {
             ModalDrawerSheet {
-                // Drawer Header
+                // Drawer Header - UPDATED with firstName/lastName
                 Column(
                     modifier = Modifier
                         .fillMaxWidth()
@@ -52,8 +62,9 @@ fun DashboardScreen(
                         fontSize = 24.sp,
                         color = MaterialTheme.colorScheme.primary
                     )
+                    val fullName = "${user?.firstName ?: ""} ${user?.lastName ?: ""}".trim()
                     Text(
-                        text = user?.name ?: "User",
+                        text = fullName.ifEmpty { "User" },
                         fontSize = 18.sp
                     )
                     Text(
@@ -112,7 +123,7 @@ fun DashboardScreen(
 
                 Divider()
 
-                // 👇 NEW: Referral Item
+                // Referral Item
                 NavigationDrawerItem(
                     icon = { Icon(Icons.Default.PersonAdd, contentDescription = null) },
                     label = {
@@ -209,9 +220,10 @@ fun DashboardScreen(
             ) {
                 item {
                     Column {
-                        // Welcome Text
+                        // Welcome Text - UPDATED with firstName/lastName
+                        val fullName = "${user?.firstName ?: ""} ${user?.lastName ?: ""}".trim()
                         Text(
-                            text = "Welcome ${user?.name ?: "User"}!",
+                            text = "Welcome ${fullName.ifEmpty { "User" }}!",
                             fontSize = 24.sp,
                             style = MaterialTheme.typography.headlineMedium,
                             modifier = Modifier.fillMaxWidth()
@@ -297,7 +309,7 @@ fun DashboardScreen(
                                     )
                                 }
 
-                                // 👇 NEW: Referral Earnings Preview
+                                // Referral Earnings Preview
                                 Column(horizontalAlignment = Alignment.CenterHorizontally) {
                                     Text(
                                         text = "🎁",
@@ -405,7 +417,7 @@ fun DashboardScreen(
                             }
                         }
 
-                        // 👇 NEW: Referral Earnings Card (Always visible)
+                        // Referral Earnings Card (Purple)
                         Card(
                             modifier = Modifier
                                 .fillMaxWidth()

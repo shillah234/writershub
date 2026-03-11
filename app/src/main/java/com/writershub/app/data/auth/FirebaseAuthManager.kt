@@ -10,34 +10,44 @@ import com.writershub.app.data.model.User
 import com.writershub.app.data.model.Withdrawal
 import com.writershub.app.data.model.Transaction
 import com.writershub.app.data.utils.ReferralCodeGenerator
+import kotlinx.coroutines.tasks.await
 import kotlin.coroutines.resume
 import kotlin.coroutines.resumeWithException
 import kotlin.coroutines.suspendCoroutine
+import java.util.Date
 
 object FirebaseAuthManager {
     private val auth = Firebase.auth
     private val firestore = Firebase.firestore
     private val TAG = "FirebaseAuthManager"
 
-    // Sign up with email and password
+    // Sign up with email and password - UPDATED with username
     suspend fun signUp(
         email: String,
         password: String,
         name: String,
+        username: String,
         phone: String,
-        referralCode: String? = null  // 👈 NEW: Optional referral code
+        referralCode: String? = null
     ): Result<User> = suspendCoroutine { continuation ->
         auth.createUserWithEmailAndPassword(email, password)
             .addOnCompleteListener { task ->
                 if (task.isSuccessful) {
                     val firebaseUser = auth.currentUser
 
-                    // Generate unique referral code for the new user
-                    val userReferralCode = ReferralCodeGenerator.generateCode(name)
+                    // Generate lowercase referral code from username + 2 digits
+                    val userReferralCode = ReferralCodeGenerator.generateCode(username)
+
+                    // Split full name into first and last
+                    val nameParts = name.split(" ")
+                    val firstName = nameParts.firstOrNull() ?: ""
+                    val lastName = if (nameParts.size > 1) nameParts.drop(1).joinToString(" ") else ""
 
                     val newUser = User(
                         id = firebaseUser?.uid ?: "",
-                        name = name,
+                        firstName = firstName,
+                        lastName = lastName,
+                        username = username.lowercase(),
                         email = email,
                         phone = phone,
                         isActivated = false,
@@ -47,12 +57,13 @@ object FirebaseAuthManager {
                         completedTasks = mutableListOf(),
                         withdrawals = mutableListOf(),
                         transactions = mutableListOf(),
-                        // Referral fields
                         referralCode = userReferralCode,
-                        referredBy = referralCode ?: "",  // Set if someone referred them
+                        referredBy = referralCode ?: "",
                         referrals = mutableListOf(),
                         referralEarnings = 0.0
                     )
+
+                    Log.d(TAG, "Generated referral code: $userReferralCode for user: $username")
 
                     // Save to Firestore
                     firestore.collection("users")
@@ -61,7 +72,7 @@ object FirebaseAuthManager {
                         .addOnSuccessListener {
                             Log.d(TAG, "User saved to Firestore: ${newUser.id}")
 
-                            // 👇 NEW: Process referral bonus if this user was referred
+                            // Process referral bonus if this user was referred
                             if (!referralCode.isNullOrEmpty()) {
                                 processReferralBonus(referralCode, newUser)
                             }
@@ -81,7 +92,7 @@ object FirebaseAuthManager {
             }
     }
 
-    // 👇 NEW: Process referral bonus when someone uses a referral code
+    // Process referral bonus when someone uses a referral code
     private fun processReferralBonus(referralCode: String, newUser: User) {
         // Find the user who owns this referral code
         firestore.collection("users")
@@ -108,8 +119,8 @@ object FirebaseAuthManager {
                             userId = referrer.id,
                             type = com.writershub.app.data.model.TransactionType.REFERRAL_BONUS,
                             amount = bonusAmount,
-                            description = "Referral bonus from ${newUser.name}",
-                            date = java.util.Date()
+                            description = "Referral bonus from ${newUser.username}",
+                            date = Date()
                         )
 
                         // Update referrer's transactions list
@@ -128,7 +139,7 @@ object FirebaseAuthManager {
                                 )
                             )
                             .addOnSuccessListener {
-                                Log.d(TAG, "Referral bonus paid to ${referrer.name}")
+                                Log.d(TAG, "Referral bonus paid to ${referrer.username}")
                             }
                             .addOnFailureListener { e ->
                                 Log.e(TAG, "Error paying referral bonus", e)
@@ -141,7 +152,7 @@ object FirebaseAuthManager {
             }
     }
 
-    // Login with email and password
+    // Login with email and password - UPDATED to handle new user fields
     suspend fun login(email: String, password: String): Result<User> = suspendCoroutine { continuation ->
         auth.signInWithEmailAndPassword(email, password)
             .addOnCompleteListener { task ->
@@ -162,7 +173,10 @@ object FirebaseAuthManager {
                                                 transactions = user.transactions ?: mutableListOf(),
                                                 referrals = user.referrals ?: mutableListOf(),
                                                 referralEarnings = user.referralEarnings ?: 0.0,
-                                                referralCode = user.referralCode ?: ReferralCodeGenerator.generateCode(user.name)
+                                                referralCode = user.referralCode ?: ReferralCodeGenerator.generateCode(user.username.ifEmpty { "user" }),
+                                                firstName = user.firstName ?: "",
+                                                lastName = user.lastName ?: "",
+                                                username = user.username ?: ""
                                             )
                                             Log.d(TAG, "User loaded from Firestore: ${completeUser.id}")
                                             continuation.resume(Result.success(completeUser))
@@ -170,7 +184,9 @@ object FirebaseAuthManager {
                                             // Create default user
                                             val defaultUser = User(
                                                 id = firebaseUser.uid,
-                                                name = firebaseUser.displayName ?: "",
+                                                firstName = "",
+                                                lastName = "",
+                                                username = "",
                                                 email = email,
                                                 phone = "",
                                                 isActivated = false,
@@ -180,7 +196,7 @@ object FirebaseAuthManager {
                                                 completedTasks = mutableListOf(),
                                                 withdrawals = mutableListOf(),
                                                 transactions = mutableListOf(),
-                                                referralCode = ReferralCodeGenerator.generateCode(firebaseUser.displayName ?: "User"),
+                                                referralCode = ReferralCodeGenerator.generateCode("user"),
                                                 referredBy = "",
                                                 referrals = mutableListOf(),
                                                 referralEarnings = 0.0
@@ -191,7 +207,9 @@ object FirebaseAuthManager {
                                         Log.e(TAG, "Error converting user document", e)
                                         val defaultUser = User(
                                             id = firebaseUser.uid,
-                                            name = firebaseUser.displayName ?: "",
+                                            firstName = "",
+                                            lastName = "",
+                                            username = "",
                                             email = email,
                                             phone = "",
                                             isActivated = false,
@@ -201,7 +219,7 @@ object FirebaseAuthManager {
                                             completedTasks = mutableListOf(),
                                             withdrawals = mutableListOf(),
                                             transactions = mutableListOf(),
-                                            referralCode = ReferralCodeGenerator.generateCode(firebaseUser.displayName ?: "User"),
+                                            referralCode = ReferralCodeGenerator.generateCode("user"),
                                             referredBy = "",
                                             referrals = mutableListOf(),
                                             referralEarnings = 0.0
@@ -212,7 +230,9 @@ object FirebaseAuthManager {
                                     // Create new user document if it doesn't exist
                                     val newUser = User(
                                         id = firebaseUser.uid,
-                                        name = firebaseUser.displayName ?: "",
+                                        firstName = "",
+                                        lastName = "",
+                                        username = "",
                                         email = email,
                                         phone = "",
                                         isActivated = false,
@@ -222,7 +242,7 @@ object FirebaseAuthManager {
                                         completedTasks = mutableListOf(),
                                         withdrawals = mutableListOf(),
                                         transactions = mutableListOf(),
-                                        referralCode = ReferralCodeGenerator.generateCode(firebaseUser.displayName ?: "User"),
+                                        referralCode = ReferralCodeGenerator.generateCode("user"),
                                         referredBy = "",
                                         referrals = mutableListOf(),
                                         referralEarnings = 0.0
@@ -239,7 +259,9 @@ object FirebaseAuthManager {
                                 Log.e(TAG, "Error loading user from Firestore", e)
                                 val basicUser = User(
                                     id = firebaseUser.uid,
-                                    name = firebaseUser.displayName ?: "",
+                                    firstName = "",
+                                    lastName = "",
+                                    username = "",
                                     email = email,
                                     phone = "",
                                     isActivated = false,
@@ -249,7 +271,7 @@ object FirebaseAuthManager {
                                     completedTasks = mutableListOf(),
                                     withdrawals = mutableListOf(),
                                     transactions = mutableListOf(),
-                                    referralCode = ReferralCodeGenerator.generateCode(firebaseUser.displayName ?: "User"),
+                                    referralCode = ReferralCodeGenerator.generateCode("user"),
                                     referredBy = "",
                                     referrals = mutableListOf(),
                                     referralEarnings = 0.0

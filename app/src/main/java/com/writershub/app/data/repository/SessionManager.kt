@@ -29,16 +29,27 @@ object SessionManager {
         }
     }
 
-    // Register with Firebase - UPDATED with referral code
+    // UPDATED Register with Firebase - now accepts firstName, lastName, username
     suspend fun register(
-        name: String,
+        firstName: String,
+        lastName: String,
+        username: String,
         email: String,
         phone: String,
         password: String,
-        referralCode: String? = null  // 👈 NEW: Optional referral code
+        referralCode: String? = null
     ): Result<User> {
         return try {
-            val result = FirebaseAuthManager.signUp(email, password, name, phone, referralCode)
+            // Combine first and last name for the name field
+            val fullName = "$firstName $lastName"
+            val result = FirebaseAuthManager.signUp(
+                email = email,
+                password = password,
+                name = fullName,
+                username = username,
+                phone = phone,
+                referralCode = referralCode
+            )
             if (result.isSuccess) {
                 currentUser = result.getOrNull()
             }
@@ -139,7 +150,7 @@ object SessionManager {
         return "BALANCE_FAILED"
     }
 
-    // 👇 NEW: Add transaction function
+    // Add transaction function
     fun addTransaction(type: TransactionType, amount: Double, description: String, taskId: String? = null, withdrawalId: String? = null) {
         currentUser?.let { user ->
             val transaction = Transaction(
@@ -163,27 +174,27 @@ object SessionManager {
         }
     }
 
-    // 👇 NEW: Get user's referral code
+    // Get user's referral code
     fun getMyReferralCode(): String {
         return currentUser?.referralCode ?: ""
     }
 
-    // 👇 NEW: Get number of people referred
+    // Get number of people referred
     fun getReferralCount(): Int {
         return currentUser?.referrals?.size ?: 0
     }
 
-    // 👇 NEW: Get total referral earnings
+    // Get total referral earnings
     fun getReferralEarnings(): Double {
         return currentUser?.referralEarnings ?: 0.0
     }
 
-    // 👇 NEW: Get list of people referred
+    // Get list of people referred
     fun getReferrals(): List<String> {
         return currentUser?.referrals ?: emptyList()
     }
 
-    // 👇 NEW: Generate a new referral code (if needed)
+    // Generate a new referral code (if needed)
     fun generateNewReferralCode(): String {
         val newCode = ReferralCodeGenerator.generateSecureCode()
         currentUser = currentUser?.copy(referralCode = newCode)
