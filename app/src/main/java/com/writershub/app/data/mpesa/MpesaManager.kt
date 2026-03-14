@@ -76,12 +76,26 @@ object MpesaManager {
         return sdf.format(Date())
     }
 
-    // Generate password for STK push
+    // Generate password for STK push - WITH ENHANCED LOGGING
     private fun getPassword(timestamp: String): String {
-        val rawPassword = "${MpesaCredentials.BUSINESS_SHORTCODE}${MpesaCredentials.PASSKEY}$timestamp"
-        return Base64.encodeToString(rawPassword.toByteArray(), Base64.NO_WRAP)
-    }
+        val shortcode = MpesaCredentials.BUSINESS_SHORTCODE
+        val passkey = MpesaCredentials.PASSKEY
 
+        Log.d("MPESA_DEBUG", "========== PASSWORD GENERATION ==========")
+        Log.d("MPESA_DEBUG", "Shortcode: '$shortcode' (Length: ${shortcode.length})")
+        Log.d("MPESA_DEBUG", "Passkey: '$passkey' (Length: ${passkey.length})")
+        Log.d("MPESA_DEBUG", "Timestamp: $timestamp")
+
+        val rawPassword = "$shortcode$passkey$timestamp"
+        Log.d("MPESA_DEBUG", "Raw Concatenated String: $rawPassword")
+        Log.d("MPESA_DEBUG", "Raw String Length: ${rawPassword.length}")
+
+        val encodedPassword = Base64.encodeToString(rawPassword.toByteArray(), Base64.NO_WRAP)
+        Log.d("MPESA_DEBUG", "Final Base64 Encoded Password: $encodedPassword")
+        Log.d("MPESA_DEBUG", "==========================================")
+
+        return encodedPassword
+    }
     // Format phone number (convert 07XXXXXXXX to 2547XXXXXXXX)
     private fun formatPhoneNumber(phone: String): String {
         return if (phone.startsWith("0")) {
@@ -114,6 +128,8 @@ object MpesaManager {
                     val shortcode = MpesaCredentials.BUSINESS_SHORTCODE
 
                     Log.d(TAG, "📱 Sending STK Push to: $formattedPhone")
+                    Log.d(TAG, "📱 Using shortcode: $shortcode")
+                    Log.d(TAG, "📱 Using timestamp: $timestamp")
 
                     val requestBody = JSONObject().apply {
                         put("BusinessShortCode", shortcode)
@@ -124,10 +140,13 @@ object MpesaManager {
                         put("PartyA", formattedPhone)
                         put("PartyB", shortcode)
                         put("PhoneNumber", formattedPhone)
-                        put("CallBackURL", "https://yourdomain.com/mpesa-callback")
+                        put("CallBackURL", "https://tgliwjhyhewzqvoayste.supabase.co/functions/v1/mpesa_callback")
                         put("AccountReference", "WritersHub")
                         put("TransactionDesc", "Account Activation")
                     }
+                    Log.d(TAG, "📦 FULL REQUEST JSON: ${requestBody.toString()}")
+                    // Log the full request body (without sensitive data)
+                    Log.d(TAG, "📦 Request Body: $requestBody")
 
                     val mediaType = "application/json".toMediaType()
                     val body = requestBody.toString().toRequestBody(mediaType)
@@ -152,18 +171,22 @@ object MpesaManager {
 
                         if (responseCode == "0") {
                             val checkoutRequestId = json.getString("CheckoutRequestID")
+                            Log.d(TAG, "✅ STK Push successful, Checkout ID: $checkoutRequestId")
                             callback(MpesaResult.Success(
                                 message = "STK Push sent. Check your phone to enter PIN.",
                                 checkoutRequestId = checkoutRequestId
                             ))
                         } else {
+                            Log.e(TAG, "❌ STK Push failed: $responseCode - $responseDesc")
                             callback(MpesaResult.Error(responseDesc))
                         }
                     } else {
+                        Log.e(TAG, "❌ Server error: $responseBody")
                         callback(MpesaResult.Error("Server error: $responseBody"))
                     }
                 } catch (e: Exception) {
                     Log.e(TAG, "💥 STK Push Exception: ${e.message}")
+                    e.printStackTrace()
                     callback(MpesaResult.Error("Network error: ${e.message}"))
                 }
             }.start()
@@ -172,7 +195,6 @@ object MpesaManager {
 
     // Check payment status (to be called from your callback URL)
     fun checkPaymentStatus(checkoutRequestId: String, callback: (MpesaResult) -> Unit) {
-        // This will be implemented when you have a callback URL
         callback(MpesaResult.Error("Status check not yet implemented"))
     }
 }
