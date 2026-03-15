@@ -119,7 +119,7 @@ fun RegisterScreen(
 
         Spacer(modifier = Modifier.height(8.dp))
 
-        // Username Field (NEW)
+        // Username Field
         OutlinedTextField(
             value = username,
             onValueChange = {
@@ -130,7 +130,8 @@ fun RegisterScreen(
             modifier = Modifier.fillMaxWidth(),
             singleLine = true,
             enabled = !isLoading,
-            placeholder = { Text("john76") }
+            placeholder = { Text("john76") },
+            isError = errorMessage.contains("Username already taken") // Highlight field if username error
         )
 
         Spacer(modifier = Modifier.height(8.dp))
@@ -166,7 +167,7 @@ fun RegisterScreen(
 
         Spacer(modifier = Modifier.height(8.dp))
 
-        // Referral Code Field (auto-filled if from deep link)
+        // Referral Code Field
         OutlinedTextField(
             value = referralCode,
             onValueChange = {
@@ -218,12 +219,20 @@ fun RegisterScreen(
 
         // Error Message
         if (errorMessage.isNotEmpty()) {
-            Text(
-                text = errorMessage,
-                color = MaterialTheme.colorScheme.error,
-                fontSize = 14.sp,
-                modifier = Modifier.align(Alignment.Start)
-            )
+            Card(
+                modifier = Modifier.fillMaxWidth(),
+                colors = CardDefaults.cardColors(
+                    containerColor = MaterialTheme.colorScheme.errorContainer
+                )
+            ) {
+                Text(
+                    text = errorMessage,
+                    modifier = Modifier.padding(12.dp),
+                    color = MaterialTheme.colorScheme.error,
+                    fontSize = 14.sp
+                )
+            }
+            Spacer(modifier = Modifier.height(8.dp))
         }
 
         Spacer(modifier = Modifier.height(16.dp))

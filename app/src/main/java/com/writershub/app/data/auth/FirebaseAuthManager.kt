@@ -21,7 +21,7 @@ object FirebaseAuthManager {
     private val firestore = Firebase.firestore
     private val TAG = "FirebaseAuthManager"
 
-    // Sign up with email and password - UPDATED with username
+    // Sign up with email and password - WITH USERNAME UNIQUENESS CHECK
     suspend fun signUp(
         email: String,
         password: String,
@@ -30,65 +30,83 @@ object FirebaseAuthManager {
         phone: String,
         referralCode: String? = null
     ): Result<User> = suspendCoroutine { continuation ->
-        auth.createUserWithEmailAndPassword(email, password)
-            .addOnCompleteListener { task ->
-                if (task.isSuccessful) {
-                    val firebaseUser = auth.currentUser
 
-                    // Generate lowercase referral code from username + 2 digits
-                    val userReferralCode = ReferralCodeGenerator.generateCode(username)
-
-                    // Split full name into first and last
-                    val nameParts = name.split(" ")
-                    val firstName = nameParts.firstOrNull() ?: ""
-                    val lastName = if (nameParts.size > 1) nameParts.drop(1).joinToString(" ") else ""
-
-                    val newUser = User(
-                        id = firebaseUser?.uid ?: "",
-                        firstName = firstName,
-                        lastName = lastName,
-                        username = username.lowercase(),
-                        email = email,
-                        phone = phone,
-                        isActivated = false,
-                        walletBalance = 0.0,
-                        totalWithdrawn = 0.0,
-                        totalEarnings = 0.0,
-                        completedTasks = mutableListOf(),
-                        withdrawals = mutableListOf(),
-                        transactions = mutableListOf(),
-                        referralCode = userReferralCode,
-                        referredBy = referralCode ?: "",
-                        referrals = mutableListOf(),
-                        referralEarnings = 0.0
-                    )
-
-                    Log.d(TAG, "Generated referral code: $userReferralCode for user: $username")
-
-                    // Save to Firestore
-                    firestore.collection("users")
-                        .document(newUser.id)
-                        .set(newUser)
-                        .addOnSuccessListener {
-                            Log.d(TAG, "User saved to Firestore: ${newUser.id}")
-
-                            // Process referral bonus if this user was referred
-                            if (!referralCode.isNullOrEmpty()) {
-                                processReferralBonus(referralCode, newUser)
-                            }
-
-                            continuation.resume(Result.success(newUser))
-                        }
-                        .addOnFailureListener { e ->
-                            Log.e(TAG, "Error saving user to Firestore", e)
-                            continuation.resume(Result.failure(e))
-                        }
-
-                } else {
-                    val errorMsg = task.exception?.message ?: "Registration failed"
-                    Log.e(TAG, "Registration failed: $errorMsg")
-                    continuation.resume(Result.failure(Exception(errorMsg)))
+        // FIRST: Check if username already exists
+        firestore.collection("users")
+            .whereEqualTo("username", username.lowercase())
+            .get()
+            .addOnSuccessListener { documents ->
+                if (!documents.isEmpty()) {
+                    // Username already taken
+                    continuation.resume(Result.failure(Exception("Username already taken. Please choose another.")))
+                    return@addOnSuccessListener
                 }
+
+                // Username available, proceed with registration
+                auth.createUserWithEmailAndPassword(email, password)
+                    .addOnCompleteListener { task ->
+                        if (task.isSuccessful) {
+                            val firebaseUser = auth.currentUser
+
+                            // Generate lowercase referral code from username + 2 digits
+                            val userReferralCode = ReferralCodeGenerator.generateCode(username)
+
+                            // Split full name into first and last
+                            val nameParts = name.split(" ")
+                            val firstName = nameParts.firstOrNull() ?: ""
+                            val lastName = if (nameParts.size > 1) nameParts.drop(1).joinToString(" ") else ""
+
+                            val newUser = User(
+                                id = firebaseUser?.uid ?: "",
+                                firstName = firstName,
+                                lastName = lastName,
+                                username = username.lowercase(),
+                                email = email,
+                                phone = phone,
+                                isActivated = false,
+                                walletBalance = 0.0,
+                                totalWithdrawn = 0.0,
+                                totalEarnings = 0.0,
+                                completedTasks = mutableListOf(),
+                                withdrawals = mutableListOf(),
+                                transactions = mutableListOf(),
+                                referralCode = userReferralCode,
+                                referredBy = referralCode ?: "",
+                                referrals = mutableListOf(),
+                                referralEarnings = 0.0
+                            )
+
+                            Log.d(TAG, "Generated referral code: $userReferralCode for user: $username")
+
+                            // Save to Firestore
+                            firestore.collection("users")
+                                .document(newUser.id)
+                                .set(newUser)
+                                .addOnSuccessListener {
+                                    Log.d(TAG, "User saved to Firestore: ${newUser.id}")
+
+                                    // Process referral bonus if this user was referred
+                                    if (!referralCode.isNullOrEmpty()) {
+                                        processReferralBonus(referralCode, newUser)
+                                    }
+
+                                    continuation.resume(Result.success(newUser))
+                                }
+                                .addOnFailureListener { e ->
+                                    Log.e(TAG, "Error saving user to Firestore", e)
+                                    continuation.resume(Result.failure(e))
+                                }
+
+                        } else {
+                            val errorMsg = task.exception?.message ?: "Registration failed"
+                            Log.e(TAG, "Registration failed: $errorMsg")
+                            continuation.resume(Result.failure(Exception(errorMsg)))
+                        }
+                    }
+            }
+            .addOnFailureListener { e ->
+                Log.e(TAG, "Error checking username", e)
+                continuation.resume(Result.failure(e))
             }
     }
 
@@ -99,7 +117,7 @@ object FirebaseAuthManager {
             .whereEqualTo("referralCode", referralCode)
             .get()
             .addOnSuccessListener { documents ->
-                if (!documents.isEmpty) {
+                if (!documents.isEmpty()) {
                     val referrerDoc = documents.first()
                     val referrer = referrerDoc.toObject(User::class.java)
 
@@ -152,7 +170,7 @@ object FirebaseAuthManager {
             }
     }
 
-    // Login with email and password - UPDATED to handle new user fields
+    // Login with email and password
     suspend fun login(email: String, password: String): Result<User> = suspendCoroutine { continuation ->
         auth.signInWithEmailAndPassword(email, password)
             .addOnCompleteListener { task ->
@@ -286,6 +304,24 @@ object FirebaseAuthManager {
                     Log.e(TAG, "Login failed: $errorMsg")
                     continuation.resume(Result.failure(Exception(errorMsg)))
                 }
+            }
+    }
+
+    // Find user by username
+    suspend fun findUserByUsername(username: String): User? = suspendCoroutine { continuation ->
+        firestore.collection("users")
+            .whereEqualTo("username", username.lowercase())
+            .get()
+            .addOnSuccessListener { documents ->
+                if (!documents.isEmpty()) {
+                    val user = documents.first().toObject(User::class.java)
+                    continuation.resume(user)
+                } else {
+                    continuation.resume(null)
+                }
+            }
+            .addOnFailureListener {
+                continuation.resume(null)
             }
     }
 

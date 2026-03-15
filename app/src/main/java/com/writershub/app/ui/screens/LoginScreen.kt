@@ -9,7 +9,6 @@ import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import kotlinx.coroutines.launch
-import kotlinx.coroutines.CoroutineScope
 import com.writershub.app.data.repository.SessionManager
 
 @Composable
@@ -17,7 +16,7 @@ fun LoginScreen(
     onLoginClick: () -> Unit,
     onRegisterClick: () -> Unit
 ) {
-    var email by remember { mutableStateOf("") }
+    var username by remember { mutableStateOf("") }
     var password by remember { mutableStateOf("") }
     var isLoading by remember { mutableStateOf(false) }
     var errorMessage by remember { mutableStateOf("") }
@@ -45,20 +44,23 @@ fun LoginScreen(
 
         Spacer(modifier = Modifier.height(40.dp))
 
+        // Username Field (CHANGED from Email)
         OutlinedTextField(
-            value = email,
+            value = username,
             onValueChange = {
-                email = it
+                username = it.lowercase() // Auto lowercase
                 errorMessage = ""
             },
-            label = { Text("Email") },
+            label = { Text("Username") },
             modifier = Modifier.fillMaxWidth(),
             singleLine = true,
-            enabled = !isLoading
+            enabled = !isLoading,
+            placeholder = { Text("john76") }
         )
 
         Spacer(modifier = Modifier.height(12.dp))
 
+        // Password Field
         OutlinedTextField(
             value = password,
             onValueChange = {
@@ -87,20 +89,20 @@ fun LoginScreen(
 
         Button(
             onClick = {
-                if (email.isBlank() || password.isBlank()) {
+                if (username.isBlank() || password.isBlank()) {
                     errorMessage = "Please fill all fields"
                     return@Button
                 }
 
                 isLoading = true
                 scope.launch {
-                    val result = SessionManager.login(email, password)
+                    val result = SessionManager.loginWithUsername(username, password)
                     isLoading = false
 
                     if (result.isSuccess) {
                         onLoginClick()
                     } else {
-                        errorMessage = "Invalid email or password"
+                        errorMessage = "Invalid username or password"
                     }
                 }
             },

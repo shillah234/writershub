@@ -16,7 +16,7 @@ object SessionManager {
     var currentUser: User? = null
         private set
 
-    // Login with Firebase
+    // Login with Firebase (email)
     suspend fun login(email: String, password: String): Result<User> {
         return try {
             val result = FirebaseAuthManager.login(email, password)
@@ -29,7 +29,28 @@ object SessionManager {
         }
     }
 
-    // UPDATED Register with Firebase - now accepts firstName, lastName, username
+    // 👇 NEW: Login with username
+    suspend fun loginWithUsername(username: String, password: String): Result<User> {
+        return try {
+            // First find the user by username
+            val user = FirebaseAuthManager.findUserByUsername(username.lowercase())
+
+            if (user == null) {
+                return Result.failure(Exception("User not found"))
+            }
+
+            // Then login with their email
+            val result = FirebaseAuthManager.login(user.email, password)
+            if (result.isSuccess) {
+                currentUser = result.getOrNull()
+            }
+            result
+        } catch (e: Exception) {
+            Result.failure(e)
+        }
+    }
+
+    // Register with Firebase - accepts firstName, lastName, username
     suspend fun register(
         firstName: String,
         lastName: String,

@@ -15,7 +15,7 @@
             android:name=".MainActivity"
             android:exported="true"
             android:label="@string/app_name"
-            android:theme="@style/Theme.Writershub">
+            android:theme="@style/Theme.Writershub.Splash">  <!-- CHANGED THIS LINE -->
 
             <!-- Intent filter for normal app launch -->
             <intent-filter>

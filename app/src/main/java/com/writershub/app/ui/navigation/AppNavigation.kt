@@ -17,7 +17,7 @@ import com.writershub.app.ui.screens.SettingsScreen
 import com.writershub.app.ui.screens.TaskDetailScreen
 import com.writershub.app.ui.screens.WithdrawScreen
 import com.writershub.app.ui.screens.TransactionHistoryScreen
-import com.writershub.app.ui.screens.ReferralScreen  // 👈 NEW IMPORT
+import com.writershub.app.ui.screens.ReferralScreen
 
 @Composable
 fun AppNavigation() {
@@ -91,7 +91,7 @@ fun AppNavigation() {
                 onTransactionHistoryClick = {
                     navController.navigate("transaction_history")
                 },
-                onReferralClick = {  // 👈 NEW: Referral click handler
+                onReferralClick = {
                     navController.navigate("referral")
                 }
             )
@@ -166,16 +166,20 @@ fun AppNavigation() {
             )
         }
 
-        // Transaction History Screen
+        // 👇 UPDATED: Transaction History Screen with browse tasks callback
         composable("transaction_history") {
             TransactionHistoryScreen(
                 onBackClick = {
                     navController.popBackStack()
+                },
+                onBrowseTasksClick = {
+                    navController.popBackStack()
+                    navController.navigate("tasks")
                 }
             )
         }
 
-        // 👈 NEW: Referral Screen
+        // Referral Screen
         composable("referral") {
             ReferralScreen(
                 onBackClick = {

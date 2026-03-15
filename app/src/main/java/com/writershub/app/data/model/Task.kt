@@ -17,5 +17,6 @@ data class Task(
     val difficulty: TaskDifficulty = TaskDifficulty.EASY,
     val timeInMinutes: Int = 5,
     val icon: String = "📝",
-    val isCompleted: Boolean = false
+    val isCompleted: Boolean = false,
+    val isPremium: Boolean = false  // Make sure this line is here
 )

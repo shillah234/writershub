@@ -13,18 +13,18 @@ import com.writershub.app.data.model.Task
 @Composable
 fun TaskCard(
     task: Task,
-    onTaskClick: () -> Unit
+    onTaskClick: () -> Unit,
+    isPremium: Boolean = false
 ) {
     Card(
         modifier = Modifier
             .fillMaxWidth()
             .padding(vertical = 6.dp),
         colors = CardDefaults.cardColors(
-            containerColor = when (task.type) {
-                com.writershub.app.data.model.TaskType.PREMIUM -> Color(0xFFFFD700) // Gold
-                com.writershub.app.data.model.TaskType.VIDEO -> Color(0xFF87CEEB) // Sky Blue
-                else -> MaterialTheme.colorScheme.surface
-            }
+            containerColor = if (isPremium)
+                Color(0xFFFFD700).copy(alpha = 0.2f)
+            else
+                MaterialTheme.colorScheme.surface
         ),
         onClick = onTaskClick
     ) {
@@ -55,21 +55,6 @@ fun TaskCard(
                     fontSize = 14.sp,
                     color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f)
                 )
-                Row(
-                    modifier = Modifier.padding(top = 4.dp)
-                ) {
-                    // Time chip
-                    AssistChip(
-                        onClick = {},
-                        label = { Text("${task.timeInMinutes} min") },
-                        modifier = Modifier.padding(end = 4.dp)
-                    )
-                    // Difficulty chip
-                    AssistChip(
-                        onClick = {},
-                        label = { Text(task.difficulty.name) }
-                    )
-                }
             }
 
             // Reward
@@ -79,10 +64,9 @@ fun TaskCard(
                 Text(
                     text = "KES ${task.reward}",
                     fontSize = 20.sp,
-                    color = MaterialTheme.colorScheme.primary,
-                    style = MaterialTheme.typography.titleLarge
+                    color = MaterialTheme.colorScheme.primary
                 )
-                if (task.type == com.writershub.app.data.model.TaskType.PREMIUM) {
+                if (isPremium) {
                     Text(
                         text = "PREMIUM",
                         fontSize = 12.sp,

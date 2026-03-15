@@ -11,16 +11,18 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.ArrowBack
+import androidx.compose.material.icons.filled.*
 import com.writershub.app.data.repository.SessionManager
 import com.writershub.app.data.model.TransactionType
+import com.writershub.app.ui.components.EmptyState
 import java.text.NumberFormat
 import java.text.SimpleDateFormat
 import java.util.*
 
 @Composable
 fun TransactionHistoryScreen(
-    onBackClick: () -> Unit
+    onBackClick: () -> Unit,
+    onBrowseTasksClick: () -> Unit
 ) {
     val user = SessionManager.currentUser
     val transactions = user?.transactions ?: emptyList()
@@ -93,31 +95,16 @@ fun TransactionHistoryScreen(
 
         Spacer(modifier = Modifier.height(16.dp))
 
-        // Transactions List
+        // Transactions List or Empty State
         if (transactions.isEmpty()) {
-            Card(
-                modifier = Modifier.fillMaxWidth(),
-                colors = CardDefaults.cardColors(
-                    containerColor = MaterialTheme.colorScheme.secondaryContainer
-                )
-            ) {
-                Column(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(32.dp),
-                    horizontalAlignment = Alignment.CenterHorizontally
-                ) {
-                    Text(
-                        text = "📭 No transactions yet",
-                        fontSize = 18.sp
-                    )
-                    Text(
-                        text = "Complete tasks to see your earnings here",
-                        fontSize = 14.sp,
-                        modifier = Modifier.padding(top = 8.dp)
-                    )
-                }
-            }
+            EmptyState(
+                icon = Icons.Default.History,
+                title = "No Transactions Yet",
+                message = "Complete tasks to see your earnings and transactions here.",
+                buttonText = "Browse Tasks",
+                onButtonClick = onBrowseTasksClick,
+                modifier = Modifier.weight(1f)
+            )
         } else {
             LazyColumn {
                 items(transactions) { transaction ->
@@ -151,7 +138,8 @@ fun TransactionItem(
             .padding(vertical = 4.dp),
         colors = CardDefaults.cardColors(
             containerColor = MaterialTheme.colorScheme.surface
-        )
+        ),
+        elevation = CardDefaults.cardElevation(2.dp)
     ) {
         Row(
             modifier = Modifier

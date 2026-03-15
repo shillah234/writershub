@@ -11,11 +11,15 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.ArrowBack
-import androidx.compose.material.icons.filled.History
-import androidx.compose.material.icons.filled.Info
+import androidx.compose.material.icons.filled.*
+import androidx.compose.ui.platform.LocalContext
+import android.content.ClipData
+import android.content.ClipboardManager
+import android.content.Context
+import android.widget.Toast
 import com.writershub.app.data.repository.SessionManager
 import com.writershub.app.data.model.WithdrawalStatus
+import com.writershub.app.ui.components.EmptyState
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import java.text.NumberFormat
@@ -324,29 +328,15 @@ fun HistoryTab() {
         Spacer(modifier = Modifier.height(16.dp))
 
         if (withdrawals.isEmpty()) {
-            Card(
-                modifier = Modifier.fillMaxWidth(),
-                colors = CardDefaults.cardColors(
-                    containerColor = MaterialTheme.colorScheme.secondaryContainer
-                )
-            ) {
-                Column(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(32.dp),
-                    horizontalAlignment = Alignment.CenterHorizontally
-                ) {
-                    Text(
-                        text = "📭 No withdrawals yet",
-                        fontSize = 18.sp
-                    )
-                    Text(
-                        text = "Your withdrawal history will appear here",
-                        fontSize = 14.sp,
-                        modifier = Modifier.padding(top = 8.dp)
-                    )
-                }
-            }
+            // 👇 UPDATED: Using EmptyState component
+            EmptyState(
+                icon = Icons.Default.History,
+                title = "No Withdrawals Yet",
+                message = "Your withdrawal history will appear here once you make your first withdrawal.",
+                buttonText = null,
+                onButtonClick = null,
+                modifier = Modifier.weight(1f)
+            )
         } else {
             LazyColumn {
                 items(withdrawals) { withdrawal ->
@@ -385,7 +375,8 @@ fun WithdrawalHistoryItem(
             .padding(vertical = 4.dp),
         colors = CardDefaults.cardColors(
             containerColor = MaterialTheme.colorScheme.surface
-        )
+        ),
+        elevation = CardDefaults.cardElevation(2.dp)
     ) {
         Column(
             modifier = Modifier.padding(12.dp)
