@@ -14,6 +14,7 @@ import androidx.compose.material.icons.filled.PersonAdd
 import kotlinx.coroutines.launch
 import com.writershub.app.MainActivity
 import com.writershub.app.data.repository.SessionManager
+import com.writershub.app.data.repository.UsernameManager
 
 @Composable
 fun RegisterScreen(
@@ -36,7 +37,29 @@ fun RegisterScreen(
     var isLoading by remember { mutableStateOf(false) }
     var errorMessage by remember { mutableStateOf("") }
 
+    // For real-time username availability check
+    var isCheckingUsername by remember { mutableStateOf(false) }
+    var usernameAvailable by remember { mutableStateOf<Boolean?>(null) }
+    var usernameCheckDebounce by remember { mutableStateOf("") }
+
     val scope = rememberCoroutineScope()
+
+    // Debounced username check
+    LaunchedEffect(username) {
+        if (username.length >= 3) {
+            isCheckingUsername = true
+            kotlinx.coroutines.delay(500) // Debounce for 500ms
+            if (username == usernameCheckDebounce) return@LaunchedEffect
+            usernameCheckDebounce = username
+
+            val exists = UsernameManager.checkUsernameExists(username)
+            usernameAvailable = !exists
+            isCheckingUsername = false
+        } else {
+            usernameAvailable = null
+            isCheckingUsername = false
+        }
+    }
 
     Column(
         modifier = Modifier
@@ -119,20 +142,54 @@ fun RegisterScreen(
 
         Spacer(modifier = Modifier.height(8.dp))
 
-        // Username Field
-        OutlinedTextField(
-            value = username,
-            onValueChange = {
-                username = it.lowercase().replace(" ", "") // Auto lowercase, no spaces
-                errorMessage = ""
-            },
-            label = { Text("Username") },
-            modifier = Modifier.fillMaxWidth(),
-            singleLine = true,
-            enabled = !isLoading,
-            placeholder = { Text("john76") },
-            isError = errorMessage.contains("Username already taken") // Highlight field if username error
-        )
+        // Username Field with real-time validation
+        Column(modifier = Modifier.fillMaxWidth()) {
+            OutlinedTextField(
+                value = username,
+                onValueChange = {
+                    username = it.lowercase().replace(" ", "")
+                    errorMessage = ""
+                },
+                label = { Text("Username") },
+                modifier = Modifier.fillMaxWidth(),
+                singleLine = true,
+                enabled = !isLoading,
+                placeholder = { Text("john76") },
+                isError = errorMessage.contains("Username") || (usernameAvailable == false),
+                supportingText = {
+                    when {
+                        isCheckingUsername -> {
+                            Text(
+                                text = "Checking availability...",
+                                color = Color.Gray,
+                                fontSize = 12.sp
+                            )
+                        }
+                        usernameAvailable == true -> {
+                            Text(
+                                text = "✓ Username available",
+                                color = Color(0xFF4CAF50),
+                                fontSize = 12.sp
+                            )
+                        }
+                        usernameAvailable == false -> {
+                            Text(
+                                text = "✗ Username already taken",
+                                color = MaterialTheme.colorScheme.error,
+                                fontSize = 12.sp
+                            )
+                        }
+                        username.length in 1..2 -> {
+                            Text(
+                                text = "Username must be at least 3 characters",
+                                color = Color.Gray,
+                                fontSize = 12.sp
+                            )
+                        }
+                    }
+                }
+            )
+        }
 
         Spacer(modifier = Modifier.height(8.dp))
 
@@ -262,9 +319,19 @@ fun RegisterScreen(
                     return@Button
                 }
 
-                // Username validation (letters, numbers, underscore only)
-                if (!username.matches(Regex("^[a-z0-9_]{3,20}$"))) {
-                    errorMessage = "Username must be 3-20 chars (lowercase, numbers, _ only)"
+                // Username validation
+                if (username.length < 3) {
+                    errorMessage = "Username must be at least 3 characters"
+                    return@Button
+                }
+
+                if (!username.matches(Regex("^[a-z0-9_]+$"))) {
+                    errorMessage = "Username can only contain lowercase letters, numbers, and underscores"
+                    return@Button
+                }
+
+                if (usernameAvailable == false) {
+                    errorMessage = "Username already taken"
                     return@Button
                 }
 
@@ -277,7 +344,7 @@ fun RegisterScreen(
                 isLoading = true
                 scope.launch {
                     val code = if (referralCode.isBlank()) null else referralCode
-                    val result = SessionManager.register(
+                    val result = SessionManager.registerWithUsername(
                         firstName = firstName,
                         lastName = lastName,
                         username = username.lowercase(),
@@ -297,7 +364,7 @@ fun RegisterScreen(
                 }
             },
             modifier = Modifier.fillMaxWidth(),
-            enabled = !isLoading
+            enabled = !isLoading && (usernameAvailable != false || username.length < 3)
         ) {
             if (isLoading) {
                 CircularProgressIndicator(

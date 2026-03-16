@@ -7,16 +7,19 @@ import com.writershub.app.data.model.TransactionType
 import com.writershub.app.data.model.Referral
 import com.writershub.app.data.auth.FirebaseAuthManager
 import com.writershub.app.data.utils.ReferralCodeGenerator
+import com.writershub.app.data.repository.UsernameManager
+import com.google.firebase.firestore.FirebaseFirestore
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.tasks.await
 import java.util.Date
 
 object SessionManager {
     var currentUser: User? = null
         private set
 
-    // Login with Firebase (email)
+    // Login with Firebase (email) - kept for backward compatibility
     suspend fun login(email: String, password: String): Result<User> {
         return try {
             val result = FirebaseAuthManager.login(email, password)
@@ -29,18 +32,26 @@ object SessionManager {
         }
     }
 
-    // 👇 NEW: Login with username
+    // NEW: Login with username
     suspend fun loginWithUsername(username: String, password: String): Result<User> {
         return try {
-            // First find the user by username
-            val user = FirebaseAuthManager.findUserByUsername(username.lowercase())
-
-            if (user == null) {
-                return Result.failure(Exception("User not found"))
+            // First get UID from username
+            val uid = UsernameManager.getUserIdFromUsername(username)
+            if (uid == null) {
+                return Result.failure(Exception("Username not found"))
             }
 
-            // Then login with their email
-            val result = FirebaseAuthManager.login(user.email, password)
+            // Get the email from user document
+            val userDoc = FirebaseFirestore.getInstance()
+                .collection("users")
+                .document(uid)
+                .get()
+                .await()
+
+            val email = userDoc.getString("email") ?: return Result.failure(Exception("User data not found"))
+
+            // Now login with email
+            val result = FirebaseAuthManager.login(email, password)
             if (result.isSuccess) {
                 currentUser = result.getOrNull()
             }
@@ -50,8 +61,8 @@ object SessionManager {
         }
     }
 
-    // Register with Firebase - accepts firstName, lastName, username
-    suspend fun register(
+    // NEW: Register with username (uses atomic batch write)
+    suspend fun registerWithUsername(
         firstName: String,
         lastName: String,
         username: String,
@@ -61,14 +72,13 @@ object SessionManager {
         referralCode: String? = null
     ): Result<User> {
         return try {
-            // Combine first and last name for the name field
-            val fullName = "$firstName $lastName"
-            val result = FirebaseAuthManager.signUp(
-                email = email,
-                password = password,
-                name = fullName,
+            val result = UsernameManager.registerUser(
+                firstName = firstName,
+                lastName = lastName,
                 username = username,
+                email = email,
                 phone = phone,
+                password = password,
                 referralCode = referralCode
             )
             if (result.isSuccess) {
@@ -78,6 +88,27 @@ object SessionManager {
         } catch (e: Exception) {
             Result.failure(e)
         }
+    }
+
+    // Original register function - kept for backward compatibility
+    suspend fun register(
+        firstName: String,
+        lastName: String,
+        username: String,
+        email: String,
+        phone: String,
+        password: String,
+        referralCode: String? = null
+    ): Result<User> {
+        return registerWithUsername(
+            firstName = firstName,
+            lastName = lastName,
+            username = username,
+            email = email,
+            phone = phone,
+            password = password,
+            referralCode = referralCode
+        )
     }
 
     // Activate account

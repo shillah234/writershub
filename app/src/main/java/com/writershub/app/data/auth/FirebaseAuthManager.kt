@@ -31,27 +31,28 @@ object FirebaseAuthManager {
         referralCode: String? = null
     ): Result<User> = suspendCoroutine { continuation ->
 
-        // FIRST: Check if username already exists
+        // FIRST: Check if username exists (this works)
         firestore.collection("users")
             .whereEqualTo("username", username.lowercase())
             .get()
             .addOnSuccessListener { documents ->
                 if (!documents.isEmpty()) {
-                    // Username already taken
                     continuation.resume(Result.failure(Exception("Username already taken. Please choose another.")))
                     return@addOnSuccessListener
                 }
 
-                // Username available, proceed with registration
+                // SECOND: Create Firebase Auth user
                 auth.createUserWithEmailAndPassword(email, password)
                     .addOnCompleteListener { task ->
                         if (task.isSuccessful) {
                             val firebaseUser = auth.currentUser
 
-                            // Generate lowercase referral code from username + 2 digits
+                            Log.d(TAG, "✅ Auth created for: ${firebaseUser?.uid}")
+
+                            // Generate referral code
                             val userReferralCode = ReferralCodeGenerator.generateCode(username)
 
-                            // Split full name into first and last
+                            // Split name
                             val nameParts = name.split(" ")
                             val firstName = nameParts.firstOrNull() ?: ""
                             val lastName = if (nameParts.size > 1) nameParts.drop(1).joinToString(" ") else ""
@@ -76,36 +77,37 @@ object FirebaseAuthManager {
                                 referralEarnings = 0.0
                             )
 
-                            Log.d(TAG, "Generated referral code: $userReferralCode for user: $username")
+                            // THIRD: Wait a moment for auth to propagate
+                            android.os.Handler(android.os.Looper.getMainLooper()).postDelayed({
+                                // FOURTH: Create Firestore document
+                                firestore.collection("users")
+                                    .document(newUser.id)
+                                    .set(newUser)
+                                    .addOnSuccessListener {
+                                        Log.d(TAG, "✅ User saved to Firestore: ${newUser.id}")
 
-                            // Save to Firestore
-                            firestore.collection("users")
-                                .document(newUser.id)
-                                .set(newUser)
-                                .addOnSuccessListener {
-                                    Log.d(TAG, "User saved to Firestore: ${newUser.id}")
+                                        // Process referral bonus
+                                        if (!referralCode.isNullOrEmpty()) {
+                                            processReferralBonus(referralCode, newUser)
+                                        }
 
-                                    // Process referral bonus if this user was referred
-                                    if (!referralCode.isNullOrEmpty()) {
-                                        processReferralBonus(referralCode, newUser)
+                                        continuation.resume(Result.success(newUser))
                                     }
-
-                                    continuation.resume(Result.success(newUser))
-                                }
-                                .addOnFailureListener { e ->
-                                    Log.e(TAG, "Error saving user to Firestore", e)
-                                    continuation.resume(Result.failure(e))
-                                }
+                                    .addOnFailureListener { e ->
+                                        Log.e(TAG, "❌ Firestore error: ${e.message}")
+                                        continuation.resume(Result.failure(e))
+                                    }
+                            }, 500) // 500ms delay
 
                         } else {
                             val errorMsg = task.exception?.message ?: "Registration failed"
-                            Log.e(TAG, "Registration failed: $errorMsg")
+                            Log.e(TAG, "❌ Auth error: $errorMsg")
                             continuation.resume(Result.failure(Exception(errorMsg)))
                         }
                     }
             }
             .addOnFailureListener { e ->
-                Log.e(TAG, "Error checking username", e)
+                Log.e(TAG, "❌ Username check error: ${e.message}")
                 continuation.resume(Result.failure(e))
             }
     }

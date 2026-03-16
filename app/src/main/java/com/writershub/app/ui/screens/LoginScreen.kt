@@ -8,6 +8,10 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.compose.ui.graphics.Color
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Person
+import androidx.compose.material.icons.filled.Lock
 import kotlinx.coroutines.launch
 import com.writershub.app.data.repository.SessionManager
 
@@ -30,67 +34,106 @@ fun LoginScreen(
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.Center
     ) {
+        // App Logo/Title
         Text(
             text = "WritersHub",
-            fontSize = 32.sp,
-            style = MaterialTheme.typography.headlineLarge
+            fontSize = 40.sp,
+            style = MaterialTheme.typography.headlineLarge,
+            color = MaterialTheme.colorScheme.primary
         )
 
         Text(
             text = "Earn by writing",
-            fontSize = 16.sp,
-            color = MaterialTheme.colorScheme.primary
+            fontSize = 18.sp,
+            color = MaterialTheme.colorScheme.primary.copy(alpha = 0.8f),
+            modifier = Modifier.padding(bottom = 32.dp)
         )
 
-        Spacer(modifier = Modifier.height(40.dp))
-
-        // Username Field (CHANGED from Email)
-        OutlinedTextField(
-            value = username,
-            onValueChange = {
-                username = it.lowercase() // Auto lowercase
-                errorMessage = ""
-            },
-            label = { Text("Username") },
+        // Username Field
+        Card(
             modifier = Modifier.fillMaxWidth(),
-            singleLine = true,
-            enabled = !isLoading,
-            placeholder = { Text("john76") }
-        )
+            colors = CardDefaults.cardColors(
+                containerColor = MaterialTheme.colorScheme.surface
+            ),
+            elevation = CardDefaults.cardElevation(2.dp)
+        ) {
+            Column(
+                modifier = Modifier.padding(16.dp)
+            ) {
+                OutlinedTextField(
+                    value = username,
+                    onValueChange = {
+                        username = it.lowercase().trim()
+                        errorMessage = ""
+                    },
+                    label = { Text("Username") },
+                    placeholder = { Text("Enter your username") },
+                    modifier = Modifier.fillMaxWidth(),
+                    singleLine = true,
+                    enabled = !isLoading,
+                    leadingIcon = {
+                        Icon(
+                            Icons.Default.Person,
+                            contentDescription = null,
+                            tint = MaterialTheme.colorScheme.primary
+                        )
+                    },
+                    isError = errorMessage.isNotEmpty() && errorMessage.contains("Username")
+                )
 
-        Spacer(modifier = Modifier.height(12.dp))
+                Spacer(modifier = Modifier.height(12.dp))
 
-        // Password Field
-        OutlinedTextField(
-            value = password,
-            onValueChange = {
-                password = it
-                errorMessage = ""
-            },
-            label = { Text("Password") },
-            modifier = Modifier.fillMaxWidth(),
-            visualTransformation = PasswordVisualTransformation(),
-            singleLine = true,
-            enabled = !isLoading
-        )
+                OutlinedTextField(
+                    value = password,
+                    onValueChange = {
+                        password = it
+                        errorMessage = ""
+                    },
+                    label = { Text("Password") },
+                    placeholder = { Text("Enter your password") },
+                    modifier = Modifier.fillMaxWidth(),
+                    singleLine = true,
+                    enabled = !isLoading,
+                    visualTransformation = PasswordVisualTransformation(),
+                    leadingIcon = {
+                        Icon(
+                            Icons.Default.Lock,
+                            contentDescription = null,
+                            tint = MaterialTheme.colorScheme.primary
+                        )
+                    },
+                    isError = errorMessage.isNotEmpty() && errorMessage.contains("Password")
+                )
+            }
+        }
 
         Spacer(modifier = Modifier.height(8.dp))
 
+        // Error Message
         if (errorMessage.isNotEmpty()) {
-            Text(
-                text = errorMessage,
-                color = MaterialTheme.colorScheme.error,
-                fontSize = 14.sp,
-                modifier = Modifier.align(Alignment.Start)
-            )
+            Card(
+                modifier = Modifier.fillMaxWidth(),
+                colors = CardDefaults.cardColors(
+                    containerColor = MaterialTheme.colorScheme.errorContainer
+                )
+            ) {
+                Text(
+                    text = errorMessage,
+                    modifier = Modifier.padding(12.dp),
+                    color = MaterialTheme.colorScheme.error,
+                    fontSize = 14.sp
+                )
+            }
+            Spacer(modifier = Modifier.height(8.dp))
         }
 
         Spacer(modifier = Modifier.height(16.dp))
 
+        // Login Button
         Button(
             onClick = {
                 if (username.isBlank() || password.isBlank()) {
-                    errorMessage = "Please fill all fields"
+                    errorMessage = "Please enter both username and password"
                     return@Button
                 }
 
@@ -106,26 +149,70 @@ fun LoginScreen(
                     }
                 }
             },
-            modifier = Modifier.fillMaxWidth(),
+            modifier = Modifier
+                .fillMaxWidth()
+                .height(56.dp),
             enabled = !isLoading
         ) {
             if (isLoading) {
                 CircularProgressIndicator(
-                    modifier = Modifier.size(20.dp),
+                    modifier = Modifier.size(24.dp),
                     color = MaterialTheme.colorScheme.onPrimary
                 )
             } else {
-                Text("Login")
+                Text(
+                    text = "Login",
+                    fontSize = 18.sp
+                )
             }
         }
 
         Spacer(modifier = Modifier.height(12.dp))
 
+        // Register Link
         TextButton(
             onClick = onRegisterClick,
             enabled = !isLoading
         ) {
-            Text("Don't have an account? Register")
+            Text(
+                text = "Don't have an account? Register",
+                fontSize = 16.sp,
+                color = MaterialTheme.colorScheme.primary
+            )
+        }
+
+        Spacer(modifier = Modifier.height(16.dp))
+
+        // Help Text
+        Text(
+            text = "Use your username to login",
+            fontSize = 14.sp,
+            color = Color.Gray,
+            modifier = Modifier.padding(top = 8.dp)
+        )
+
+        // Demo credentials (optional - remove in production)
+        Card(
+            modifier = Modifier.fillMaxWidth(),
+            colors = CardDefaults.cardColors(
+                containerColor = MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.3f)
+            )
+        ) {
+            Column(
+                modifier = Modifier.padding(12.dp)
+            ) {
+                Text(
+                    text = "Demo credentials:",
+                    fontSize = 12.sp,
+                    color = MaterialTheme.colorScheme.primary,
+                    fontWeight = androidx.compose.ui.text.font.FontWeight.Bold
+                )
+                Text(
+                    text = "Username: testuser • Password: password123",
+                    fontSize = 12.sp,
+                    color = Color.Gray
+                )
+            }
         }
     }
 }
