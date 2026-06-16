@@ -50,7 +50,7 @@ object FirebaseAuthManager {
                             Log.d(TAG, "✅ Auth created for: ${firebaseUser?.uid}")
 
                             // Generate referral code
-                            val userReferralCode = ReferralCodeGenerator.generateCode(username)
+                            val userReferralCode = ReferralCodeGenerator.generateReferralCode()
 
                             // Split name
                             val nameParts = name.split(" ")

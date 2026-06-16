@@ -6,7 +6,7 @@
     <!-- Splash screen theme -->
     <style name="Theme.Writershub.Splash" parent="Theme.SplashScreen">
         <!-- Splash screen background color -->
-        <item name="windowSplashScreenBackground">#6200EE</item>
+        <item name="windowSplashScreenBackground">#E8D5F5</item>
 
         <!-- Splash screen icon -->
         <item name="windowSplashScreenAnimatedIcon">@drawable/ic_splash</item>

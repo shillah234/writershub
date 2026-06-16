@@ -1,6 +1,8 @@
 package com.writershub.app.ui.screens
 
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -26,30 +28,90 @@ fun LoginScreen(
     var errorMessage by remember { mutableStateOf("") }
 
     val scope = rememberCoroutineScope()
+    val scrollState = rememberScrollState()
 
     Column(
         modifier = Modifier
             .fillMaxSize()
+            .verticalScroll(scrollState)
             .padding(24.dp),
-        horizontalAlignment = Alignment.CenterHorizontally,
-        verticalArrangement = Arrangement.Center
+        horizontalAlignment = Alignment.CenterHorizontally
     ) {
+        Spacer(modifier = Modifier.height(20.dp))
+
         // App Logo/Title
         Text(
-            text = "WritersHub",
+            text = "✍️ WritersHub",
             fontSize = 40.sp,
             style = MaterialTheme.typography.headlineLarge,
             color = MaterialTheme.colorScheme.primary
         )
 
+        Spacer(modifier = Modifier.height(8.dp))
+
         Text(
-            text = "Earn by writing",
-            fontSize = 18.sp,
-            color = MaterialTheme.colorScheme.primary.copy(alpha = 0.8f),
-            modifier = Modifier.padding(bottom = 32.dp)
+            text = "Earn by writing. Grow with us.",
+            fontSize = 16.sp,
+            color = MaterialTheme.colorScheme.primary.copy(alpha = 0.8f)
         )
 
-        // Username Field
+        Spacer(modifier = Modifier.height(32.dp))
+
+        // ✅ NEW: Welcome Info Section
+        Card(
+            modifier = Modifier.fillMaxWidth(),
+            colors = CardDefaults.cardColors(
+                containerColor = MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.5f)
+            ),
+            shape = MaterialTheme.shapes.medium
+        ) {
+            Column(
+                modifier = Modifier.padding(16.dp)
+            ) {
+                Text(
+                    text = "🌟 Welcome to WritersHub",
+                    fontSize = 18.sp,
+                    fontWeight = androidx.compose.ui.text.font.FontWeight.Bold,
+                    color = MaterialTheme.colorScheme.primary
+                )
+
+                Spacer(modifier = Modifier.height(8.dp))
+
+                Text(
+                    text = "Join thousands of writers across Kenya earning real money by completing simple tasks. Whether you're a student, professional, or stay-at-home parent, WritersHub is your gateway to financial freedom.",
+                    fontSize = 14.sp,
+                    color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f)
+                )
+
+                Spacer(modifier = Modifier.height(12.dp))
+
+                // Stats Row
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceEvenly
+                ) {
+                    StatItem(
+                        number = "2,500+",
+                        label = "Active Writers",
+                        color = MaterialTheme.colorScheme.primary
+                    )
+                    StatItem(
+                        number = "KES 450K+",
+                        label = "Earnings Paid",
+                        color = MaterialTheme.colorScheme.primary
+                    )
+                    StatItem(
+                        number = "50+",
+                        label = "Daily Tasks",
+                        color = MaterialTheme.colorScheme.primary
+                    )
+                }
+            }
+        }
+
+        Spacer(modifier = Modifier.height(24.dp))
+
+        // Login Card
         Card(
             modifier = Modifier.fillMaxWidth(),
             colors = CardDefaults.cardColors(
@@ -180,39 +242,28 @@ fun LoginScreen(
                 color = MaterialTheme.colorScheme.primary
             )
         }
+    }
+}
 
-        Spacer(modifier = Modifier.height(16.dp))
-
-        // Help Text
+@Composable
+fun StatItem(
+    number: String,
+    label: String,
+    color: Color
+) {
+    Column(
+        horizontalAlignment = Alignment.CenterHorizontally
+    ) {
         Text(
-            text = "Use your username to login",
-            fontSize = 14.sp,
-            color = Color.Gray,
-            modifier = Modifier.padding(top = 8.dp)
+            text = number,
+            fontSize = 18.sp,
+            fontWeight = androidx.compose.ui.text.font.FontWeight.Bold,
+            color = color
         )
-
-        // Demo credentials (optional - remove in production)
-        Card(
-            modifier = Modifier.fillMaxWidth(),
-            colors = CardDefaults.cardColors(
-                containerColor = MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.3f)
-            )
-        ) {
-            Column(
-                modifier = Modifier.padding(12.dp)
-            ) {
-                Text(
-                    text = "Demo credentials:",
-                    fontSize = 12.sp,
-                    color = MaterialTheme.colorScheme.primary,
-                    fontWeight = androidx.compose.ui.text.font.FontWeight.Bold
-                )
-                Text(
-                    text = "Username: testuser • Password: password123",
-                    fontSize = 12.sp,
-                    color = Color.Gray
-                )
-            }
-        }
+        Text(
+            text = label,
+            fontSize = 11.sp,
+            color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f)
+        )
     }
 }
