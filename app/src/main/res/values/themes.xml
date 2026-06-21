@@ -1,20 +1,13 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <!-- Base application theme -->
+    <!-- Your existing app theme -->
     <style name="Theme.Writershub" parent="android:Theme.Material.Light.NoActionBar" />
 
-    <!-- Splash screen theme -->
+    <!-- Splash screen theme with BLACK background -->
     <style name="Theme.Writershub.Splash" parent="Theme.SplashScreen">
-        <!-- Splash screen background color -->
-        <item name="windowSplashScreenBackground">#E8D5F5</item>
-
-        <!-- Splash screen icon -->
+        <item name="windowSplashScreenBackground">#000000</item>
         <item name="windowSplashScreenAnimatedIcon">@drawable/ic_splash</item>
-
-        <!-- Duration of the animated icon -->
         <item name="windowSplashScreenAnimationDuration">1000</item>
-
-        <!-- Theme to use after splash screen - MUST match exactly -->
         <item name="postSplashScreenTheme">@style/Theme.Writershub</item>
     </style>
 </resources>
