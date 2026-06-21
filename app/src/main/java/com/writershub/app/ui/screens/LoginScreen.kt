@@ -8,14 +8,18 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.input.PasswordVisualTransformation
+import androidx.compose.ui.text.input.VisualTransformation
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.graphics.Color
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Person
 import androidx.compose.material.icons.filled.Lock
+import androidx.compose.material.icons.filled.Visibility
+import androidx.compose.material.icons.filled.VisibilityOff
 import kotlinx.coroutines.launch
 import com.writershub.app.data.repository.SessionManager
+import com.google.firebase.auth.FirebaseAuth
 
 @Composable
 fun LoginScreen(
@@ -26,6 +30,13 @@ fun LoginScreen(
     var password by remember { mutableStateOf("") }
     var isLoading by remember { mutableStateOf(false) }
     var errorMessage by remember { mutableStateOf("") }
+    var passwordVisible by remember { mutableStateOf(false) }
+
+    // Forgot Password dialog state
+    var showForgotPasswordDialog by remember { mutableStateOf(false) }
+    var resetEmail by remember { mutableStateOf("") }
+    var resetMessage by remember { mutableStateOf("") }
+    var isSendingReset by remember { mutableStateOf(false) }
 
     val scope = rememberCoroutineScope()
     val scrollState = rememberScrollState()
@@ -57,7 +68,7 @@ fun LoginScreen(
 
         Spacer(modifier = Modifier.height(32.dp))
 
-        // ✅ NEW: Welcome Info Section
+        // Welcome Info Section
         Card(
             modifier = Modifier.fillMaxWidth(),
             colors = CardDefaults.cardColors(
@@ -156,7 +167,7 @@ fun LoginScreen(
                     modifier = Modifier.fillMaxWidth(),
                     singleLine = true,
                     enabled = !isLoading,
-                    visualTransformation = PasswordVisualTransformation(),
+                    visualTransformation = if (passwordVisible) VisualTransformation.None else PasswordVisualTransformation(),
                     leadingIcon = {
                         Icon(
                             Icons.Default.Lock,
@@ -164,12 +175,39 @@ fun LoginScreen(
                             tint = MaterialTheme.colorScheme.primary
                         )
                     },
+                    trailingIcon = {
+                        IconButton(
+                            onClick = { passwordVisible = !passwordVisible }
+                        ) {
+                            Icon(
+                                if (passwordVisible) Icons.Default.Visibility else Icons.Default.VisibilityOff,
+                                contentDescription = if (passwordVisible) "Hide password" else "Show password"
+                            )
+                        }
+                    },
                     isError = errorMessage.isNotEmpty() && errorMessage.contains("Password")
                 )
             }
         }
 
         Spacer(modifier = Modifier.height(8.dp))
+
+        // Forgot Password Link
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.End
+        ) {
+            TextButton(
+                onClick = { showForgotPasswordDialog = true },
+                enabled = !isLoading
+            ) {
+                Text(
+                    text = "Forgot Password?",
+                    fontSize = 14.sp,
+                    color = MaterialTheme.colorScheme.primary
+                )
+            }
+        }
 
         // Error Message
         if (errorMessage.isNotEmpty()) {
@@ -242,6 +280,98 @@ fun LoginScreen(
                 color = MaterialTheme.colorScheme.primary
             )
         }
+    }
+
+    // Forgot Password Dialog
+    if (showForgotPasswordDialog) {
+        AlertDialog(
+            onDismissRequest = {
+                showForgotPasswordDialog = false
+                resetMessage = ""
+            },
+            title = {
+                Text(
+                    text = "Reset Password",
+                    fontSize = 20.sp,
+                    fontWeight = androidx.compose.ui.text.font.FontWeight.Bold
+                )
+            },
+            text = {
+                Column {
+                    Text(
+                        text = "Enter your email address and we'll send you a link to reset your password.",
+                        fontSize = 14.sp,
+                        color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f)
+                    )
+                    Spacer(modifier = Modifier.height(16.dp))
+                    OutlinedTextField(
+                        value = resetEmail,
+                        onValueChange = {
+                            resetEmail = it
+                            resetMessage = ""
+                        },
+                        label = { Text("Email Address") },
+                        placeholder = { Text("Enter your email") },
+                        modifier = Modifier.fillMaxWidth(),
+                        singleLine = true,
+                        enabled = !isSendingReset,
+                        isError = resetMessage.isNotEmpty() && resetMessage.contains("error")
+                    )
+                    if (resetMessage.isNotEmpty()) {
+                        Spacer(modifier = Modifier.height(8.dp))
+                        Text(
+                            text = resetMessage,
+                            color = if (resetMessage.contains("sent")) Color(0xFF4CAF50) else MaterialTheme.colorScheme.error,
+                            fontSize = 14.sp
+                        )
+                    }
+                }
+            },
+            confirmButton = {
+                Button(
+                    onClick = {
+                        if (resetEmail.isBlank()) {
+                            resetMessage = "Please enter your email address"
+                            return@Button
+                        }
+                        isSendingReset = true
+                        resetMessage = ""
+                        FirebaseAuth.getInstance()
+                            .sendPasswordResetEmail(resetEmail)
+                            .addOnCompleteListener { task ->
+                                isSendingReset = false
+                                if (task.isSuccessful) {
+                                    resetMessage = "✅ Password reset link sent to your email"
+                                    resetEmail = ""
+                                } else {
+                                    resetMessage = "❌ Error: ${task.exception?.message ?: "Please try again"}"
+                                }
+                            }
+                    },
+                    enabled = !isSendingReset
+                ) {
+                    if (isSendingReset) {
+                        CircularProgressIndicator(
+                            modifier = Modifier.size(20.dp),
+                            color = MaterialTheme.colorScheme.onPrimary
+                        )
+                    } else {
+                        Text("Send Reset Link")
+                    }
+                }
+            },
+            dismissButton = {
+                TextButton(
+                    onClick = {
+                        showForgotPasswordDialog = false
+                        resetMessage = ""
+                    },
+                    enabled = !isSendingReset
+                ) {
+                    Text("Cancel")
+                }
+            }
+        )
     }
 }
 
