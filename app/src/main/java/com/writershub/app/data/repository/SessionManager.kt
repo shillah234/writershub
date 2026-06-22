@@ -1,13 +1,12 @@
 package com.writershub.app.data.repository
 
+import android.util.Log
 import com.writershub.app.data.model.User
 import com.writershub.app.data.model.Withdrawal
 import com.writershub.app.data.model.Transaction
 import com.writershub.app.data.model.TransactionType
-import com.writershub.app.data.model.Referral
 import com.writershub.app.data.auth.FirebaseAuthManager
 import com.writershub.app.data.utils.ReferralCodeGenerator
-import com.writershub.app.data.repository.UsernameManager
 import com.google.firebase.firestore.FirebaseFirestore
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -32,31 +31,38 @@ object SessionManager {
         }
     }
 
-    // NEW: Login with username
+    // NEW: Login with username - FIXED VERSION
     suspend fun loginWithUsername(username: String, password: String): Result<User> {
         return try {
-            // First get UID from username
-            val uid = UsernameManager.getUserIdFromUsername(username)
-            if (uid == null) {
+            val cleanUsername = username.lowercase().trim()
+            Log.d("LoginDebug", "🔐 Login attempt with username: $cleanUsername")
+
+            // 👇 STEP 1: Get email from username (PUBLIC read - works!)
+            val email = UsernameManager.getEmailFromUsername(cleanUsername)
+            Log.d("LoginDebug", "📧 Email from username: $email")
+
+            if (email == null) {
+                Log.e("LoginDebug", "❌ Username not found: $cleanUsername")
                 return Result.failure(Exception("Username not found"))
             }
 
-            // Get the email from user document
-            val userDoc = FirebaseFirestore.getInstance()
-                .collection("users")
-                .document(uid)
-                .get()
-                .await()
-
-            val email = userDoc.getString("email") ?: return Result.failure(Exception("User data not found"))
-
-            // Now login with email
+            // 👇 STEP 2: Login with Firebase Auth (this authenticates the user)
+            Log.d("LoginDebug", "🔐 Attempting login with email: $email")
             val result = FirebaseAuthManager.login(email, password)
+
+            Log.d("LoginDebug", "🔐 Login result success: ${result.isSuccess}")
+
+            // 👇 STEP 3: After authentication, we can safely read the user document
             if (result.isSuccess) {
                 currentUser = result.getOrNull()
+                Log.d("LoginDebug", "✅ Current user set: ${currentUser?.email}")
+            } else {
+                Log.e("LoginDebug", "❌ Login failed: ${result.exceptionOrNull()?.message}")
             }
             result
         } catch (e: Exception) {
+            Log.e("LoginDebug", "❌ Login exception: ${e.message}")
+            e.printStackTrace()
             Result.failure(e)
         }
     }

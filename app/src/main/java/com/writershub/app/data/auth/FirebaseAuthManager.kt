@@ -15,7 +15,6 @@ import kotlin.coroutines.resume
 import kotlin.coroutines.resumeWithException
 import kotlin.coroutines.suspendCoroutine
 import java.util.Date
-
 object FirebaseAuthManager {
     private val auth = Firebase.auth
     private val firestore = Firebase.firestore
@@ -76,6 +75,12 @@ object FirebaseAuthManager {
                                 referrals = mutableListOf(),
                                 referralEarnings = 0.0
                             )
+                           Log.d(TAG, "🔥 UID: ${newUser.id}")
+                            Log.d(TAG, "🔥 Username: ${newUser.username}")
+                            Log.d(TAG, "🔥 Email: ${newUser.email}")
+                            Log.d(TAG, "🔥 First Name: ${newUser.firstName}")
+                            Log.d(TAG, "🔥 Last Name: ${newUser.lastName}")
+                            Log.d(TAG, "🔥 Full user object: $newUser")
 
                             // THIRD: Wait a moment for auth to propagate
                             android.os.Handler(android.os.Looper.getMainLooper()).postDelayed({

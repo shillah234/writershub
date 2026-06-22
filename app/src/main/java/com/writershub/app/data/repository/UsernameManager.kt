@@ -32,6 +32,44 @@ object UsernameManager {
             }
     }
 
+    // Helper function to get email from username (for login)
+    suspend fun getEmailFromUsername(username: String): String? = suspendCoroutine { continuation ->
+        val cleanUsername = username.lowercase().trim()
+        Log.d(TAG, "🔍 Looking for email from username: $cleanUsername")
+
+        db.collection("usernames")
+            .document(cleanUsername)
+            .get()
+            .addOnSuccessListener { document ->
+                if (document.exists()) {
+                    val email = document.getString("email")
+                    Log.d(TAG, "✅ Email found: $email")
+                    continuation.resume(email)
+                } else {
+                    Log.d(TAG, "❌ No username found: $cleanUsername")
+                    continuation.resume(null)
+                }
+            }
+            .addOnFailureListener {
+                Log.e(TAG, "❌ Error getting email: ${it.message}")
+                continuation.resume(null)
+            }
+    }
+
+    // Helper function to get user ID from username (for login)
+    suspend fun getUserIdFromUsername(username: String): String? = suspendCoroutine { continuation ->
+        val cleanUsername = username.lowercase().trim()
+        db.collection("usernames").document(cleanUsername)
+            .get()
+            .addOnSuccessListener { document ->
+                val uid = document.getString("uid")
+                continuation.resume(uid)
+            }
+            .addOnFailureListener {
+                continuation.resume(null)
+            }
+    }
+
     // Register user with username - uses atomic batch write
     suspend fun registerUser(
         firstName: String,
@@ -66,16 +104,17 @@ object UsernameManager {
                 // Step 2: Prepare data for batch write
                 val batch = db.batch()
 
-                // Username document - maps username -> uid
+                // Username document - maps username -> uid AND stores email
                 val usernameRef = db.collection("usernames").document(cleanUsername)
                 val usernameData = hashMapOf(
                     "uid" to uid,
+                    "email" to email,  // 👈 EMAIL IS NOW STORED HERE
                     "createdAt" to System.currentTimeMillis()
                 )
 
                 // User document - full profile
                 val userRef = db.collection("users").document(uid)
-                val referralCodeGenerated = ReferralCodeGenerator.generateCode(cleanUsername)
+                val referralCodeGenerated = ReferralCodeGenerator.generateReferralCode()
 
                 val userData = hashMapOf(
                     "firstName" to firstName,
@@ -133,20 +172,6 @@ object UsernameManager {
                         Log.e(TAG, "Batch write failed: ${e.message}")
                         continuation.resume(Result.failure(e))
                     }
-            }
-    }
-
-    // Helper function to get user ID from username (for login)
-    suspend fun getUserIdFromUsername(username: String): String? = suspendCoroutine { continuation ->
-        val cleanUsername = username.lowercase().trim()
-        db.collection("usernames").document(cleanUsername)
-            .get()
-            .addOnSuccessListener { document ->
-                val uid = document.getString("uid")
-                continuation.resume(uid)
-            }
-            .addOnFailureListener {
-                continuation.resume(null)
             }
     }
 }

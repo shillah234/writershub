@@ -43,11 +43,11 @@ fun ActivationScreen(
 
         Spacer(modifier = Modifier.height(16.dp))
 
-        // Info Card
+        // ✅ UPDATED: Orange Activation Fee Card
         Card(
             modifier = Modifier.fillMaxWidth(),
             colors = CardDefaults.cardColors(
-                containerColor = MaterialTheme.colorScheme.primaryContainer
+                containerColor = Color(0xFFFF6F00) // Vibrant Orange
             )
         ) {
             Column(
@@ -56,7 +56,7 @@ fun ActivationScreen(
                 Text(
                     text = "KES 100 Activation Fee",
                     fontSize = 24.sp,
-                    color = MaterialTheme.colorScheme.onPrimaryContainer
+                    color = Color.White
                 )
 
                 Spacer(modifier = Modifier.height(8.dp))
@@ -66,14 +66,15 @@ fun ActivationScreen(
                             "• Verify your identity\n" +
                             "• Prevent spam accounts\n" +
                             "• Provide quality tasks",
-                    fontSize = 14.sp
+                    fontSize = 14.sp,
+                    color = Color.White.copy(alpha = 0.9f)
                 )
             }
         }
 
         Spacer(modifier = Modifier.height(24.dp))
 
-        // Phone Number Input
+        // ✅ FIXED: Phone Number Input with visible text
         OutlinedTextField(
             value = phoneNumber,
             onValueChange = {
@@ -87,7 +88,15 @@ fun ActivationScreen(
             enabled = !isLoading,
             supportingText = {
                 Text("Enter the M-Pesa number you'll pay from")
-            }
+            },
+            colors = OutlinedTextFieldDefaults.colors(
+                focusedTextColor = Color.Black,
+                unfocusedTextColor = Color.Black,
+                focusedLabelColor = MaterialTheme.colorScheme.primary,
+                unfocusedLabelColor = MaterialTheme.colorScheme.primary.copy(alpha = 0.7f),
+                focusedBorderColor = MaterialTheme.colorScheme.primary,
+                unfocusedBorderColor = MaterialTheme.colorScheme.primary.copy(alpha = 0.5f)
+            )
         )
 
         Spacer(modifier = Modifier.height(8.dp))
@@ -183,8 +192,6 @@ fun ActivationScreen(
 
                         if (result is MpesaResult.Success) {
                             checkoutRequestId = result.checkoutRequestId
-                            // Note: We don't activate immediately - wait for callback
-                            // The account will be activated when we receive confirmation
                         }
                     }
                 }
@@ -208,7 +215,6 @@ fun ActivationScreen(
         if (checkoutRequestId != null) {
             OutlinedButton(
                 onClick = {
-                    // For now, just simulate activation for testing
                     SessionManager.activateAccount()
                     onActivateClick()
                 },
