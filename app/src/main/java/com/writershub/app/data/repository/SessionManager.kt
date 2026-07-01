@@ -13,6 +13,7 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.tasks.await
 import java.util.Date
+import java.util.UUID
 
 object SessionManager {
     var currentUser: User? = null
@@ -166,6 +167,7 @@ object SessionManager {
         }
     }
 
+    // UPDATED: Request withdrawal with top-level collection support
     fun requestWithdrawal(amount: Double, phoneNumber: String): String {
         currentUser?.let { user ->
             if (amount < 1000) return "MINIMUM_FAILED"
@@ -175,7 +177,35 @@ object SessionManager {
             val newBalance = user.walletBalance - amount
             val newTotalWithdrawn = user.totalWithdrawn + amount
 
+            // Create withdrawal object
+            val withdrawalId = UUID.randomUUID().toString()
+            val withdrawalData = hashMapOf(
+                "id" to withdrawalId,
+                "userId" to user.id,
+                "username" to user.username,
+                "userName" to "${user.firstName} ${user.lastName}",
+                "phone" to phoneNumber,
+                "amount" to amount,
+                "method" to "M-Pesa",
+                "status" to "PENDING",
+                "createdAt" to System.currentTimeMillis()
+            )
+
+            // 👇 NEW: Save to top-level withdrawals collection
+            val firestore = FirebaseFirestore.getInstance()
+            firestore.collection("withdrawals")
+                .document(withdrawalId)
+                .set(withdrawalData)
+                .addOnSuccessListener {
+                    Log.d("SessionManager", "✅ Withdrawal saved to top-level collection: $withdrawalId")
+                }
+                .addOnFailureListener { e ->
+                    Log.e("SessionManager", "❌ Error saving withdrawal to top-level: ${e.message}")
+                }
+
+            // Also add to user's withdrawals array for backward compatibility
             val withdrawal = Withdrawal(
+                id = withdrawalId,
                 amount = amount,
                 phoneNumber = phoneNumber,
                 status = com.writershub.app.data.model.WithdrawalStatus.PENDING,
@@ -195,7 +225,7 @@ object SessionManager {
                 type = TransactionType.WITHDRAWAL,
                 amount = amount,
                 description = "Withdrawal to $phoneNumber",
-                withdrawalId = withdrawal.id
+                withdrawalId = withdrawalId
             )
 
             // Update in Firebase

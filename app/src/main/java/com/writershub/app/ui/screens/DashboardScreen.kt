@@ -16,6 +16,8 @@ import androidx.compose.animation.core.*
 import kotlinx.coroutines.launch
 import com.writershub.app.data.repository.SessionManager
 import com.writershub.app.data.model.User
+import com.writershub.app.data.model.Announcement
+import com.writershub.app.data.repository.AnnouncementRepository
 import com.writershub.app.ui.components.GradientWalletCard
 import com.writershub.app.ui.components.AnimatedButton
 import com.writershub.app.ui.theme.*
@@ -23,7 +25,11 @@ import java.text.NumberFormat
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.draw.clip
 import androidx.compose.foundation.background
+import androidx.compose.foundation.shape.RoundedCornerShape
 import java.util.Locale
+import java.text.SimpleDateFormat
+import java.util.Date
+import android.util.Log
 
 // Helper function to get user's full name
 fun getUserDisplayName(user: User?): String {
@@ -55,11 +61,23 @@ fun DashboardScreen(
 
     val currencyFormat = NumberFormat.getCurrencyInstance(Locale("en", "KE"))
 
+    var announcements by remember { mutableStateOf<List<Announcement>>(emptyList()) }
+    var isLoadingAnnouncements by remember { mutableStateOf(true) }
+
+    LaunchedEffect(Unit) {
+        isLoadingAnnouncements = true
+        try {
+            announcements = AnnouncementRepository.getActiveAnnouncements()
+        } catch (e: Exception) {
+            Log.e("DashboardScreen", "Error loading announcements: ${e.message}")
+        }
+        isLoadingAnnouncements = false
+    }
+
     ModalNavigationDrawer(
         drawerState = drawerState,
         drawerContent = {
             ModalDrawerSheet {
-                // Drawer Header with gradient background
                 Box(
                     modifier = Modifier
                         .fillMaxWidth()
@@ -222,30 +240,15 @@ fun DashboardScreen(
         Scaffold(
             topBar = {
                 TopAppBar(
-                    title = {
-                        Text(
-                            "Dashboard",
-                            color = MaterialTheme.colorScheme.onPrimary
-                        )
-                    },
+                    title = { Text("Dashboard", color = MaterialTheme.colorScheme.onPrimary) },
                     navigationIcon = {
                         IconButton(onClick = { scope.launch { drawerState.open() } }) {
-                            Icon(
-                                Icons.Default.Menu,
-                                contentDescription = null,
-                                tint = MaterialTheme.colorScheme.onPrimary
-                            )
+                            Icon(Icons.Default.Menu, contentDescription = null, tint = MaterialTheme.colorScheme.onPrimary)
                         }
                     },
-                    colors = TopAppBarDefaults.topAppBarColors(
-                        containerColor = Primary
-                    ),
+                    colors = TopAppBarDefaults.topAppBarColors(containerColor = Primary),
                     actions = {
-                        Badge(
-                            containerColor = WalletYellow
-                        ) {
-                            Text("${SessionManager.getCompletedTasksCount()}")
-                        }
+                        Badge(containerColor = WalletYellow) { Text("${SessionManager.getCompletedTasksCount()}") }
                         Spacer(modifier = Modifier.width(8.dp))
                     }
                 )
@@ -261,14 +264,12 @@ fun DashboardScreen(
                 item {
                     AnimatedVisibility(
                         visible = true,
-                        enter = fadeIn(animationSpec = tween(500)) +
-                                slideInVertically(
-                                    initialOffsetY = { it / 4 },
-                                    animationSpec = tween(500)
-                                )
+                        enter = fadeIn(animationSpec = tween(500)) + slideInVertically(
+                            initialOffsetY = { it / 4 },
+                            animationSpec = tween(500)
+                        )
                     ) {
                         Column {
-                            // Welcome Text with animation
                             val fullName = getUserDisplayName(user)
                             Text(
                                 text = "Welcome ${fullName}!",
@@ -279,132 +280,68 @@ fun DashboardScreen(
 
                             Spacer(modifier = Modifier.height(8.dp))
 
-                            // Support Banner with gradient
                             Card(
                                 modifier = Modifier.fillMaxWidth(),
-                                colors = CardDefaults.cardColors(
-                                    containerColor = Secondary.copy(alpha = 0.1f)
-                                )
+                                colors = CardDefaults.cardColors(containerColor = Secondary.copy(alpha = 0.1f))
                             ) {
                                 Row(
                                     modifier = Modifier.padding(12.dp),
                                     verticalAlignment = Alignment.CenterVertically
                                 ) {
-                                    Icon(
-                                        Icons.Default.Info,
-                                        contentDescription = null,
-                                        tint = Secondary,
-                                        modifier = Modifier.size(20.dp)
-                                    )
+                                    Icon(Icons.Default.Info, contentDescription = null, tint = Secondary, modifier = Modifier.size(20.dp))
                                     Spacer(modifier = Modifier.width(8.dp))
-                                    Text(
-                                        text = "For assistance contact support@writershub.com",
-                                        fontSize = 14.sp,
-                                        color = Secondary
-                                    )
+                                    Text(text = "For assistance contact support@writershub.com", fontSize = 14.sp, color = Secondary)
                                 }
                             }
 
                             Spacer(modifier = Modifier.height(24.dp))
 
-                            // Activation Required Card (if not activated)
                             if (!isActivated) {
                                 Card(
                                     modifier = Modifier.fillMaxWidth(),
-                                    colors = CardDefaults.cardColors(
-                                        containerColor = WalletYellow.copy(alpha = 0.1f)
-                                    )
+                                    colors = CardDefaults.cardColors(containerColor = WalletYellow.copy(alpha = 0.1f))
                                 ) {
                                     Row(
                                         modifier = Modifier.padding(16.dp),
                                         verticalAlignment = Alignment.CenterVertically
                                     ) {
-                                        Icon(
-                                            Icons.Default.Warning,
-                                            contentDescription = null,
-                                            tint = WalletYellow
-                                        )
+                                        Icon(Icons.Default.Warning, contentDescription = null, tint = WalletYellow)
                                         Spacer(modifier = Modifier.width(12.dp))
                                         Column {
-                                            Text(
-                                                text = "⚠️ Activation Required",
-                                                fontSize = 16.sp,
-                                                fontWeight = androidx.compose.ui.text.font.FontWeight.Bold,
-                                                color = WalletYellow
-                                            )
-                                            Text(
-                                                text = "Pay KES 100 to access all features",
-                                                fontSize = 14.sp,
-                                                color = WalletYellow.copy(alpha = 0.8f)
-                                            )
+                                            Text(text = "⚠️ Activation Required", fontSize = 16.sp, fontWeight = androidx.compose.ui.text.font.FontWeight.Bold, color = WalletYellow)
+                                            Text(text = "Pay KES 100 to access all features", fontSize = 14.sp, color = WalletYellow.copy(alpha = 0.8f))
                                         }
                                     }
                                 }
                                 Spacer(modifier = Modifier.height(16.dp))
                             }
 
-                            // Stats Summary Card
                             Card(
                                 modifier = Modifier.fillMaxWidth(),
-                                colors = CardDefaults.cardColors(
-                                    containerColor = Surface
-                                ),
+                                colors = CardDefaults.cardColors(containerColor = Surface),
                                 elevation = CardDefaults.cardElevation(2.dp)
                             ) {
                                 Row(
-                                    modifier = Modifier
-                                        .fillMaxWidth()
-                                        .padding(16.dp),
+                                    modifier = Modifier.fillMaxWidth().padding(16.dp),
                                     horizontalArrangement = Arrangement.SpaceEvenly
                                 ) {
-                                    // Tasks Completed
                                     Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                                        Text(
-                                            text = "${SessionManager.getCompletedTasksCount()}",
-                                            fontSize = 20.sp,
-                                            fontWeight = androidx.compose.ui.text.font.FontWeight.Bold,
-                                            color = Primary
-                                        )
-                                        Text(
-                                            text = "Tasks Done",
-                                            fontSize = 12.sp,
-                                            color = Color.Gray
-                                        )
+                                        Text(text = "${SessionManager.getCompletedTasksCount()}", fontSize = 20.sp, fontWeight = androidx.compose.ui.text.font.FontWeight.Bold, color = Primary)
+                                        Text(text = "Tasks Done", fontSize = 12.sp, color = Color.Gray)
                                     }
-
-                                    // Activation Status
                                     Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                                        Text(
-                                            text = if (isActivated) "✅" else "🔒",
-                                            fontSize = 20.sp
-                                        )
-                                        Text(
-                                            text = if (isActivated) "Activated" else "Locked",
-                                            fontSize = 12.sp,
-                                            color = Color.Gray
-                                        )
+                                        Text(text = if (isActivated) "✅" else "🔒", fontSize = 20.sp)
+                                        Text(text = if (isActivated) "Activated" else "Locked", fontSize = 12.sp, color = Color.Gray)
                                     }
-
-                                    // Referral Count
                                     Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                                        Text(
-                                            text = "${SessionManager.getReferralCount()}",
-                                            fontSize = 20.sp,
-                                            fontWeight = androidx.compose.ui.text.font.FontWeight.Bold,
-                                            color = WalletPurple
-                                        )
-                                        Text(
-                                            text = "Referrals",
-                                            fontSize = 12.sp,
-                                            color = Color.Gray
-                                        )
+                                        Text(text = "${SessionManager.getReferralCount()}", fontSize = 20.sp, fontWeight = androidx.compose.ui.text.font.FontWeight.Bold, color = WalletPurple)
+                                        Text(text = "Referrals", fontSize = 12.sp, color = Color.Gray)
                                     }
                                 }
                             }
 
                             Spacer(modifier = Modifier.height(24.dp))
 
-                            // Wallet Cards Section Title
                             Text(
                                 text = "Your Wallet",
                                 fontSize = 20.sp,
@@ -414,7 +351,6 @@ fun DashboardScreen(
 
                             Spacer(modifier = Modifier.height(8.dp))
 
-                            // GRADIENT CARDS - REPLACED WITH NEW STYLING
                             GradientWalletCard(
                                 title = "Wallet Balance",
                                 amount = currencyFormat.format(user?.walletBalance ?: 0.00),
@@ -429,7 +365,6 @@ fun DashboardScreen(
                                     color = WalletGreen,
                                     icon = "📤"
                                 )
-
                                 GradientWalletCard(
                                     title = "Total Earnings",
                                     amount = currencyFormat.format(user?.totalEarnings ?: 0.00),
@@ -456,7 +391,6 @@ fun DashboardScreen(
 
                             Spacer(modifier = Modifier.height(24.dp))
 
-                            // Quick Actions Section
                             Text(
                                 text = "Quick Actions",
                                 fontSize = 20.sp,
@@ -466,7 +400,6 @@ fun DashboardScreen(
 
                             Spacer(modifier = Modifier.height(8.dp))
 
-                            // Tasks Button
                             AnimatedButton(
                                 onClick = onTasksClick,
                                 text = "📋 View Available Tasks",
@@ -476,7 +409,6 @@ fun DashboardScreen(
 
                             Spacer(modifier = Modifier.height(8.dp))
 
-                            // Referral Button
                             AnimatedButton(
                                 onClick = onReferralClick,
                                 text = "🎁 Refer & Earn KES 20",
@@ -486,7 +418,6 @@ fun DashboardScreen(
 
                             Spacer(modifier = Modifier.height(8.dp))
 
-                            // Withdraw Button (only if balance > 0)
                             if ((user?.walletBalance ?: 0.0) > 0) {
                                 AnimatedButton(
                                     onClick = onWithdrawClick,
@@ -494,6 +425,119 @@ fun DashboardScreen(
                                     backgroundColor = WalletGreen,
                                     modifier = Modifier.fillMaxWidth()
                                 )
+                            }
+
+                            // 👇 ANNOUNCEMENTS - ORANGE BACKGROUND
+                            if (announcements.isNotEmpty()) {
+                                Spacer(modifier = Modifier.height(24.dp))
+
+                                Text(
+                                    text = "📢 Latest Announcements",
+                                    fontSize = 18.sp,
+                                    style = MaterialTheme.typography.titleMedium,
+                                    modifier = Modifier.fillMaxWidth(),
+                                    color = Color(0xFF333333)
+                                )
+
+                                Spacer(modifier = Modifier.height(8.dp))
+
+                                announcements.forEach { announcement ->
+                                    Card(
+                                        modifier = Modifier
+                                            .fillMaxWidth()
+                                            .padding(vertical = 6.dp),
+                                        colors = CardDefaults.cardColors(
+                                            containerColor = if (announcement.isPinned)
+                                                Color(0xFFFF6F00)  // Dark Orange for pinned
+                                            else
+                                                Color(0xFFFFB74D)  // Light Orange for normal
+                                        ),
+                                        elevation = CardDefaults.cardElevation(
+                                            defaultElevation = if (announcement.isPinned) 6.dp else 3.dp
+                                        ),
+                                        shape = RoundedCornerShape(12.dp)
+                                    ) {
+                                        Row(
+                                            modifier = Modifier
+                                                .fillMaxWidth()
+                                                .padding(16.dp),
+                                            horizontalArrangement = Arrangement.SpaceBetween,
+                                            verticalAlignment = Alignment.Top
+                                        ) {
+                                            Column(
+                                                modifier = Modifier.weight(1f)
+                                            ) {
+                                                Row(
+                                                    verticalAlignment = Alignment.CenterVertically
+                                                ) {
+                                                    Text(
+                                                        text = announcement.title,
+                                                        fontSize = 16.sp,
+                                                        fontWeight = androidx.compose.ui.text.font.FontWeight.Bold,
+                                                        color = if (announcement.isPinned)
+                                                            Color.White
+                                                        else
+                                                            Color(0xFF4A2800)
+                                                    )
+                                                    if (announcement.isPinned) {
+                                                        Spacer(modifier = Modifier.width(8.dp))
+                                                        Surface(
+                                                            color = Color.White,
+                                                            shape = RoundedCornerShape(4.dp)
+                                                        ) {
+                                                            Text(
+                                                                text = " 📌 PINNED ",
+                                                                fontSize = 10.sp,
+                                                                fontWeight = androidx.compose.ui.text.font.FontWeight.Bold,
+                                                                color = Color(0xFFFF6F00),
+                                                                modifier = Modifier.padding(horizontal = 8.dp, vertical = 3.dp)
+                                                            )
+                                                        }
+                                                    }
+                                                }
+                                                Spacer(modifier = Modifier.height(6.dp))
+                                                Text(
+                                                    text = announcement.message,
+                                                    fontSize = 14.sp,
+                                                    color = if (announcement.isPinned)
+                                                        Color.White
+                                                    else
+                                                        Color(0xFF4A2800),
+                                                    lineHeight = 20.sp
+                                                )
+                                                Spacer(modifier = Modifier.height(6.dp))
+                                                Row(
+                                                    horizontalArrangement = Arrangement.spacedBy(12.dp)
+                                                ) {
+                                                    Text(
+                                                        text = SimpleDateFormat("dd MMM yyyy", Locale.getDefault())
+                                                            .format(Date(announcement.createdAt)),
+                                                        fontSize = 11.sp,
+                                                        color = if (announcement.isPinned)
+                                                            Color.White.copy(alpha = 0.8f)
+                                                        else
+                                                            Color(0xFF6D4C00)
+                                                    )
+                                                    if (announcement.isPinned) {
+                                                        Text(
+                                                            text = "📍 Pinned",
+                                                            fontSize = 11.sp,
+                                                            color = Color.White
+                                                        )
+                                                    }
+                                                }
+                                            }
+                                            if (announcement.isPinned) {
+                                                Icon(
+                                                    Icons.Default.PushPin,
+                                                    contentDescription = "Pinned",
+                                                    tint = Color.White,
+                                                    modifier = Modifier.size(20.dp)
+                                                )
+                                            }
+                                        }
+                                    }
+                                }
                             }
                         }
                     }

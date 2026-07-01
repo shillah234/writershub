@@ -2,6 +2,7 @@ package com.writershub.app.ui.screens
 
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.items
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -9,6 +10,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.writershub.app.data.model.Task
 import com.writershub.app.data.repository.SessionManager
 import com.writershub.app.data.repository.TaskRepository
 import com.writershub.app.ui.components.TaskCard
@@ -19,7 +21,15 @@ fun PremiumTasksScreen(
     onTaskDetailClick: (String) -> Unit
 ) {
     val isActivated = SessionManager.isUserActivated()
-    val premiumTasks = remember { TaskRepository.getPremiumTasks() }
+    var premiumTasks by remember { mutableStateOf<List<Task>>(emptyList()) }
+    var isLoading by remember { mutableStateOf(true) }
+
+    // Load premium tasks from Firestore
+    LaunchedEffect(Unit) {
+        isLoading = true
+        premiumTasks = TaskRepository.getPremiumTasks()
+        isLoading = false
+    }
 
     Column(
         modifier = Modifier
@@ -52,7 +62,15 @@ fun PremiumTasksScreen(
 
         Spacer(modifier = Modifier.height(16.dp))
 
-        if (!isActivated) {
+        if (isLoading) {
+            // Show loading indicator
+            Box(
+                modifier = Modifier.fillMaxSize(),
+                contentAlignment = Alignment.Center
+            ) {
+                CircularProgressIndicator()
+            }
+        } else if (!isActivated) {
             // Show activation message
             Card(
                 modifier = Modifier.fillMaxWidth(),
@@ -77,23 +95,44 @@ fun PremiumTasksScreen(
                 }
             }
             Spacer(modifier = Modifier.height(16.dp))
-        }
-
-        // Tasks List
-        LazyColumn {
-            items(premiumTasks.size) { index ->
-                TaskCard(
-                    task = premiumTasks[index],
-                    onTaskClick = {
-                        if (isActivated) {
-                            onTaskDetailClick(premiumTasks[index].id)
-                        }
-                    }
+        } else if (premiumTasks.isEmpty()) {
+            // Show empty state when no premium tasks
+            Column(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(32.dp),
+                horizontalAlignment = Alignment.CenterHorizontally
+            ) {
+                Text(
+                    text = "⭐ No Premium Tasks Available",
+                    fontSize = 18.sp,
+                    style = MaterialTheme.typography.titleMedium
+                )
+                Spacer(modifier = Modifier.height(8.dp))
+                Text(
+                    text = "Check back later for new premium tasks!",
+                    fontSize = 14.sp,
+                    color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f)
                 )
             }
+        } else {
+            // Tasks List
+            LazyColumn {
+                items(premiumTasks) { task ->
+                    TaskCard(
+                        task = task,
+                        onTaskClick = {
+                            if (isActivated) {
+                                onTaskDetailClick(task.id)
+                            }
+                        },
+                        isPremium = true
+                    )
+                }
 
-            item {
-                Spacer(modifier = Modifier.height(80.dp))
+                item {
+                    Spacer(modifier = Modifier.height(80.dp))
+                }
             }
         }
     }
